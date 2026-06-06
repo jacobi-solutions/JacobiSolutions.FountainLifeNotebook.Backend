@@ -1,68 +1,61 @@
-import { DocumentsService } from './documents.service';
 import { DocumentChunksRepository } from './document-chunks.repository';
-import { DocumentChunkingService } from './document-chunking.service';
+import { DocumentIngestionService } from './document-ingestion.service';
 import { DocumentStorageService } from './document-storage.service';
-import { DocumentTextExtractorService } from './document-text-extractor.service';
 import { DocumentsRepository } from './documents.repository';
+import { DocumentsService } from './documents.service';
 
 describe('DocumentsService', () => {
-  it('cleans up storage, document records, and partial chunks when upload chunk persistence fails', async () => {
+  it('delegates uploads to the ingestion workflow and maps the response DTO', async () => {
     const document = {
       byteSize: 11,
-      chunkCount: 0,
+      chunkCount: 1,
       contentType: 'text/plain',
       createdDateUtc: new Date('2026-01-01T00:00:00.000Z'),
       id: 'document-1',
       lastUpdatedDateUtc: new Date('2026-01-01T00:00:00.000Z'),
       originalFileName: 'notes.txt',
       ownerUserId: 'user-1',
-      status: 'failed',
+      status: 'ready',
       storageKey: 'user-1/document-1.txt',
       textPreview: 'hello world',
     };
-    const documentsRepository = {
-      create: jest.fn(async () => document),
-      deleteByIdForOwner: jest.fn(async () => true),
-    } as unknown as DocumentsRepository;
-    const chunksRepository = {
-      createMany: jest.fn(async () => {
-        throw new Error('chunk insert failed');
-      }),
-      deleteByDocumentIdForOwner: jest.fn(async () => undefined),
-    } as unknown as DocumentChunksRepository;
-    const storageService = {
-      deleteDocument: jest.fn(async () => undefined),
-      storeDocument: jest.fn(async () => ({ storageKey: document.storageKey })),
-    } as unknown as DocumentStorageService;
+    const documentIngestionService = {
+      uploadDocument: jest.fn(async () => document),
+    } as unknown as DocumentIngestionService;
     const service = new DocumentsService(
-      documentsRepository,
-      chunksRepository,
-      storageService,
-      { extractText: jest.fn(async () => 'hello world') } as unknown as DocumentTextExtractorService,
-      { splitText: jest.fn(async () => ['hello world']) } as unknown as DocumentChunkingService,
+      {} as unknown as DocumentsRepository,
+      {} as unknown as DocumentChunksRepository,
+      {} as unknown as DocumentStorageService,
+      documentIngestionService,
     );
+    const file = {
+      buffer: Buffer.from('hello world'),
+      mimetype: 'text/plain',
+      originalname: 'notes.txt',
+      size: 11,
+    } as Express.Multer.File;
+    const user = {
+      email: 'user@example.com',
+      subject: 'user-1',
+      username: 'user@example.com',
+    };
 
-    await expect(
-      service.uploadDocument(
-        {
-          buffer: Buffer.from('hello world'),
-          mimetype: 'text/plain',
-          originalname: 'notes.txt',
-          size: 11,
-        } as Express.Multer.File,
-        { email: 'user@example.com', subject: 'user-1', username: 'user@example.com' },
-      ),
-    ).rejects.toThrow('chunk insert failed');
+    await expect(service.uploadDocument(file, user)).resolves.toEqual({
+      byteSize: 11,
+      chunkCount: 1,
+      contentType: 'text/plain',
+      createdDateUtc: document.createdDateUtc,
+      id: 'document-1',
+      lastUpdatedDateUtc: document.lastUpdatedDateUtc,
+      originalFileName: 'notes.txt',
+      status: 'ready',
+      textPreview: 'hello world',
+    });
 
-    expect(documentsRepository.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        chunkCount: 0,
-        status: 'failed',
-      }),
+    expect(documentIngestionService.uploadDocument).toHaveBeenCalledWith(
+      file,
+      user,
     );
-    expect(chunksRepository.deleteByDocumentIdForOwner).toHaveBeenCalledWith('document-1', 'user-1');
-    expect(documentsRepository.deleteByIdForOwner).toHaveBeenCalledWith('document-1', 'user-1');
-    expect(storageService.deleteDocument).toHaveBeenCalledWith('user-1/document-1.txt');
   });
 
   it('deletes storage before Mongo state so failed storage deletion can be retried', async () => {
@@ -89,8 +82,7 @@ describe('DocumentsService', () => {
           order.push('storage');
         }),
       } as unknown as DocumentStorageService,
-      {} as unknown as DocumentTextExtractorService,
-      {} as unknown as DocumentChunkingService,
+      {} as unknown as DocumentIngestionService,
     );
 
     await expect(

@@ -1,14 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
-
-const CHUNK_OVERLAP = 200;
-const CHUNK_SIZE = 1200;
+import {
+  DOCUMENT_CHUNK_OVERLAP,
+  DOCUMENT_CHUNK_SIZE,
+} from './document.constants';
 
 @Injectable()
 export class DocumentChunkingService {
   private readonly splitter = new RecursiveCharacterTextSplitter({
-    chunkOverlap: CHUNK_OVERLAP,
-    chunkSize: CHUNK_SIZE,
+    chunkOverlap: DOCUMENT_CHUNK_OVERLAP,
+    chunkSize: DOCUMENT_CHUNK_SIZE,
   });
 
   async splitText(text: string) {

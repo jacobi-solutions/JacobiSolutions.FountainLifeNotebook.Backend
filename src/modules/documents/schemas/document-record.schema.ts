@@ -1,9 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
 import { BaseModel } from '../../../shared/models/base.model';
+import { DOCUMENT_PROCESSING_STATUSES } from '../document.constants';
+import type { DocumentProcessingStatus } from '../document.constants';
 
 export type DocumentRecordDocument = HydratedDocument<DocumentRecord>;
-export type DocumentProcessingStatus = 'failed' | 'ready';
 
 @Schema({ collection: 'documents', id: false })
 export class DocumentRecord extends BaseModel {
@@ -22,7 +23,12 @@ export class DocumentRecord extends BaseModel {
   @Prop({ required: true })
   storageKey!: string;
 
-  @Prop({ default: 'ready', enum: ['failed', 'ready'], required: true })
+  @Prop({
+    default: 'ready',
+    enum: DOCUMENT_PROCESSING_STATUSES,
+    required: true,
+    type: String,
+  })
   status!: DocumentProcessingStatus;
 
   @Prop({ default: 0, required: true })
@@ -32,5 +38,6 @@ export class DocumentRecord extends BaseModel {
   textPreview?: string;
 }
 
-export const DocumentRecordSchema = SchemaFactory.createForClass(DocumentRecord);
+export const DocumentRecordSchema =
+  SchemaFactory.createForClass(DocumentRecord);
 DocumentRecordSchema.index({ ownerUserId: 1, lastUpdatedDateUtc: -1 });

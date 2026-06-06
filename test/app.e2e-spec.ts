@@ -1,10 +1,17 @@
-import { CanActivate, ExecutionContext, INestApplication, ValidationPipe } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  INestApplication,
+  ValidationPipe,
+} from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import type { App } from 'supertest/types';
 import { AssistantController } from '../src/modules/assistant/assistant.controller';
 import { AssistantService } from '../src/modules/assistant/assistant.service';
+import { NOTEBOOK_ASSISTANT_KEY } from '../src/modules/assistant/assistant.constants';
+import { AuthenticatedUserGuard } from '../src/modules/auth/authenticated-user.guard';
 import { HealthController } from '../src/modules/health/health.controller';
 import { GlobalExceptionFilter } from '../src/shared/http/global-exception.filter';
 
@@ -12,7 +19,7 @@ describe('Fountain Life Notebook API e2e', () => {
   let app: INestApplication<App>;
   const assistantService = {
     getConversation: jest.fn(async (conversationId: string) => ({
-      assistantKey: 'support',
+      assistantKey: NOTEBOOK_ASSISTANT_KEY,
       createdDateUtc: new Date('2026-01-01T00:00:00.000Z'),
       id: conversationId,
       lastUpdatedDateUtc: new Date('2026-01-01T00:00:00.000Z'),
@@ -47,11 +54,17 @@ describe('Fountain Life Notebook API e2e', () => {
 
     app = moduleFixture.createNestApplication();
     app.setGlobalPrefix('api');
-    app.use((request: Request & { correlationId?: string }, response: Response, next: NextFunction) => {
-      request.correlationId = 'e2e-correlation-id';
-      response.setHeader('x-correlation-id', 'e2e-correlation-id');
-      next();
-    });
+    app.use(
+      (
+        request: Request & { correlationId?: string },
+        response: Response,
+        next: NextFunction,
+      ) => {
+        request.correlationId = 'e2e-correlation-id';
+        response.setHeader('x-correlation-id', 'e2e-correlation-id');
+        next();
+      },
+    );
     app.useGlobalPipes(
       new ValidationPipe({
         forbidNonWhitelisted: true,
@@ -68,7 +81,9 @@ describe('Fountain Life Notebook API e2e', () => {
   });
 
   it('serves health under the API prefix', async () => {
-    const response = await request(app.getHttpServer()).get('/api/health').expect(200);
+    const response = await request(app.getHttpServer())
+      .get('/api/health')
+      .expect(200);
 
     expect(response.body).toEqual(
       expect.objectContaining({
@@ -129,4 +144,3 @@ describe('Fountain Life Notebook API e2e', () => {
     expect(response.text).toContain('retrieval failed');
   });
 });
-import { AuthenticatedUserGuard } from '../src/modules/auth/authenticated-user.guard';

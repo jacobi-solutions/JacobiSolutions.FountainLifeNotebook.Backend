@@ -1,18 +1,30 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AwsModule } from '../aws/aws.module';
+import type { FountainLifeConfig } from '../../shared/config/app.config';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentChunkingService } from './document-chunking.service';
+import { DocumentIngestionService } from './document-ingestion.service';
 import { DocumentStorageService } from './document-storage.service';
 import { DocumentTextExtractorService } from './document-text-extractor.service';
 import { DocumentsController } from './documents.controller';
 import { DocumentsRepository } from './documents.repository';
 import { DocumentsService } from './documents.service';
 import { LocalDocumentStorageService } from './local-document-storage.service';
-import { DocumentChunk, DocumentChunkSchema } from './schemas/document-chunk.schema';
-import { DocumentRecord, DocumentRecordSchema } from './schemas/document-record.schema';
+import { S3DocumentStorageService } from './s3-document-storage.service';
+import {
+  DocumentChunk,
+  DocumentChunkSchema,
+} from './schemas/document-chunk.schema';
+import {
+  DocumentRecord,
+  DocumentRecordSchema,
+} from './schemas/document-record.schema';
 
 @Module({
   imports: [
+    AwsModule,
     MongooseModule.forFeature([
       { name: DocumentRecord.name, schema: DocumentRecordSchema },
       { name: DocumentChunk.name, schema: DocumentChunkSchema },
@@ -22,12 +34,30 @@ import { DocumentRecord, DocumentRecordSchema } from './schemas/document-record.
   providers: [
     DocumentChunksRepository,
     DocumentChunkingService,
+    DocumentIngestionService,
     DocumentsRepository,
     DocumentsService,
     DocumentTextExtractorService,
+    LocalDocumentStorageService,
+    S3DocumentStorageService,
     {
+      inject: [
+        ConfigService,
+        LocalDocumentStorageService,
+        S3DocumentStorageService,
+      ],
       provide: DocumentStorageService,
-      useClass: LocalDocumentStorageService,
+      useFactory: (
+        configService: ConfigService,
+        localStorage: LocalDocumentStorageService,
+        s3Storage: S3DocumentStorageService,
+      ) => {
+        const config =
+          configService.getOrThrow<FountainLifeConfig>('fountainLife');
+        return config.documentStorageProvider === 's3'
+          ? s3Storage
+          : localStorage;
+      },
     },
   ],
   exports: [DocumentChunksRepository, DocumentsRepository, DocumentsService],

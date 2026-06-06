@@ -8,8 +8,11 @@ import {
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
 import { AssistantController } from './assistant.controller';
 import { AssistantService } from './assistant.service';
+import { ASSISTANT_HANDLERS } from './assistant-handler';
+import { AssistantRegistry } from './assistant-registry';
 import { LlmProviderService } from './llm-provider.service';
 import { NotebookAgentService } from './notebook-agent.service';
+import { NotebookAssistantHandler } from './notebook-assistant.handler';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
 
 @Module({
@@ -23,9 +26,18 @@ import { NotebookRetrievalService } from './notebook-retrieval.service';
   providers: [
     AssistantConversationsRepository,
     AssistantService,
+    AssistantRegistry,
     LlmProviderService,
     NotebookAgentService,
+    NotebookAssistantHandler,
     NotebookRetrievalService,
+    {
+      inject: [NotebookAssistantHandler],
+      provide: ASSISTANT_HANDLERS,
+      useFactory: (notebookAssistant: NotebookAssistantHandler) => [
+        notebookAssistant,
+      ],
+    },
   ],
   exports: [AssistantService],
 })

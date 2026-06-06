@@ -9,20 +9,25 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { ResponseFactory } from '../../shared/contracts/response.factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
+import { MAX_DOCUMENT_UPLOAD_BYTES } from './document.constants';
 import { DocumentsService } from './documents.service';
 import { DeleteDocumentRequestDto } from './dto/delete-document.dto';
 import { DeleteDocumentResponseDto } from './dto/delete-document-response.dto';
 import { ListDocumentsRequestDto } from './dto/list-documents.dto';
 import { ListDocumentsResponseDto } from './dto/list-documents-response.dto';
 import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
-
-const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 @ApiBearerAuth()
 @ApiTags('documents')
@@ -33,7 +38,11 @@ export class DocumentsController {
 
   @Post('upload')
   @HttpCode(HttpStatus.OK)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: MAX_DOCUMENT_UPLOAD_BYTES },
+    }),
+  )
   @ApiConsumes('multipart/form-data')
   @ApiBody({
     schema: {
@@ -53,7 +62,10 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(await this.documentsService.uploadDocument(file, user), correlationId);
+    return ResponseFactory.success(
+      await this.documentsService.uploadDocument(file, user),
+      correlationId,
+    );
   }
 
   @Post('list')
@@ -64,7 +76,10 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(await this.documentsService.listDocuments(user), correlationId);
+    return ResponseFactory.success(
+      await this.documentsService.listDocuments(user),
+      correlationId,
+    );
   }
 
   @Post('delete')
@@ -77,13 +92,19 @@ export class DocumentsController {
   ) {
     if (!request.payload) {
       return ResponseFactory.failure(
-        { errorCode: 'VALIDATION_ERROR', errorMessage: 'Request payload is required.' },
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Request payload is required.',
+        },
         correlationId,
       );
     }
 
     return ResponseFactory.success(
-      await this.documentsService.deleteDocument(request.payload.documentId, user),
+      await this.documentsService.deleteDocument(
+        request.payload.documentId,
+        user,
+      ),
       correlationId,
     );
   }

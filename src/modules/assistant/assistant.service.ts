@@ -1,25 +1,29 @@
-import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
+import {
+  ASSISTANT_SEARCH_STATUS_TEXT,
+  NOTEBOOK_ASSISTANT_DISPLAY_NAME,
+} from './assistant.constants';
+import { AssistantSummary } from './assistant-handler';
+import { AssistantRegistry } from './assistant-registry';
 import { AssistantConversationDto } from './dto/assistant-conversation.dto';
 import { AssistantConversationMessageDto } from './dto/assistant-conversation-message.dto';
 import { AssistantConversationParticipantDto } from './dto/assistant-conversation-participant.dto';
 import { CitationDto } from './dto/citation.dto';
 import type { SendAssistantMessagePayloadDto } from './dto/send-assistant-message.dto';
-import { NotebookAgentService } from './notebook-agent.service';
 import {
   AssistantConversation,
   AssistantConversationDocument,
   AssistantConversationItem,
   AssistantConversationParticipant,
 } from './schemas/assistant-conversation.schema';
-
-export interface AssistantSummary {
-  description: string;
-  key: string;
-  name: string;
-}
 
 export interface AssistantThreadUpdate {
   citations?: CitationDto[];
@@ -34,17 +38,11 @@ export interface AssistantThreadUpdate {
 export class AssistantService {
   constructor(
     private readonly conversationsRepository: AssistantConversationsRepository,
-    private readonly notebookAgentService: NotebookAgentService,
+    private readonly assistantRegistry: AssistantRegistry,
   ) {}
 
   listAssistants(): AssistantSummary[] {
-    return [
-      {
-        description: 'Ask questions grounded in your uploaded documents.',
-        key: 'notebook',
-        name: 'Notebook Assistant',
-      },
-    ];
+    return this.assistantRegistry.listSummaries();
   }
 
   async *streamMessage(
@@ -52,7 +50,12 @@ export class AssistantService {
     request: SendAssistantMessagePayloadDto,
     user: AuthenticatedUser,
   ): AsyncGenerator<AssistantThreadUpdate> {
-    const conversation = await this.loadOrCreateConversation(assistantKey, request, user);
+    const handler = this.assistantRegistry.getOrThrow(assistantKey);
+    const conversation = await this.loadOrCreateConversation(
+      assistantKey,
+      request,
+      user,
+    );
     const conversationId = conversation.id;
     const turnId = randomUUID();
     const userMessage = this.createUserMessage(turnId, request.message, user);
@@ -71,15 +74,15 @@ export class AssistantService {
     yield {
       conversationId,
       role: 'system',
-      text: 'Searching uploaded documents and preparing an answer.',
+      text: ASSISTANT_SEARCH_STATUS_TEXT,
       type: 'status',
     };
 
-    const answer = await this.notebookAgentService.answerQuestion(
-      request.message,
-      user.subject,
-      request.documentIds,
-    );
+    const answer = await handler.answerQuestion({
+      documentIds: request.documentIds,
+      message: request.message,
+      ownerUserId: user.subject,
+    });
     const assistantMessage = this.createAssistantMessage(
       turnId,
       answer.answer,
@@ -99,8 +102,15 @@ export class AssistantService {
     };
   }
 
-  async getConversation(conversationId: string, user: AuthenticatedUser): Promise<AssistantConversationDto> {
-    const conversation = await this.conversationsRepository.findByIdForParticipant(conversationId, user.subject);
+  async getConversation(
+    conversationId: string,
+    user: AuthenticatedUser,
+  ): Promise<AssistantConversationDto> {
+    const conversation =
+      await this.conversationsRepository.findByIdForParticipant(
+        conversationId,
+        user.subject,
+      );
     if (!conversation) {
       throw new NotFoundException('Conversation was not found.');
     }
@@ -114,13 +124,23 @@ export class AssistantService {
     user: AuthenticatedUser,
   ) {
     if (request.conversationId) {
-      const existing = await this.conversationsRepository.findById(request.conversationId);
+      const existing = await this.conversationsRepository.findById(
+        request.conversationId,
+      );
       if (!existing) {
         throw new NotFoundException('Conversation was not found.');
       }
 
       if (!this.hasActiveParticipant(existing, user.subject)) {
-        throw new ForbiddenException('User is not a participant in this conversation.');
+        throw new ForbiddenException(
+          'User is not a participant in this conversation.',
+        );
+      }
+
+      if (existing.assistantKey !== assistantKey) {
+        throw new BadRequestException(
+          'Conversation belongs to a different assistant.',
+        );
       }
 
       return existing;
@@ -130,13 +150,20 @@ export class AssistantService {
       assistantKey,
       items: [],
       metadata: {},
-      participants: this.createParticipants(request.participantUserIds ?? [], user),
+      participants: this.createParticipants(
+        request.participantUserIds ?? [],
+        user,
+      ),
     });
   }
 
-  private createParticipants(participantUserIds: string[], user: AuthenticatedUser): AssistantConversationParticipant[] {
+  private createParticipants(
+    participantUserIds: string[],
+    user: AuthenticatedUser,
+  ): AssistantConversationParticipant[] {
     const participantIds = [user.subject, ...participantUserIds].filter(
-      (value, index, values) => value.trim().length > 0 && values.indexOf(value) === index,
+      (value, index, values) =>
+        value.trim().length > 0 && values.indexOf(value) === index,
     );
 
     return participantIds.map((userId, index) => ({
@@ -148,9 +175,13 @@ export class AssistantService {
     }));
   }
 
-  private hasActiveParticipant(conversation: AssistantConversation, userId: string) {
+  private hasActiveParticipant(
+    conversation: AssistantConversation,
+    userId: string,
+  ) {
     return conversation.participants.some(
-      (participant) => participant.userId === userId && participant.status === 'active',
+      (participant) =>
+        participant.userId === userId && participant.status === 'active',
     );
   }
 
@@ -178,7 +209,7 @@ export class AssistantService {
     citations: CitationDto[],
   ): AssistantConversationItem {
     return {
-      actorDisplayName: 'Fountain Life Notebook',
+      actorDisplayName: NOTEBOOK_ASSISTANT_DISPLAY_NAME,
       actorType: 'assistant',
       createdDateUtc: new Date(),
       id: randomUUID(),
@@ -190,7 +221,9 @@ export class AssistantService {
     };
   }
 
-  private toDto(conversation: AssistantConversationDocument): AssistantConversationDto {
+  private toDto(
+    conversation: AssistantConversationDocument,
+  ): AssistantConversationDto {
     return {
       assistantKey: conversation.assistantKey,
       createdDateUtc: conversation.createdDateUtc,
@@ -198,15 +231,17 @@ export class AssistantService {
       lastUpdatedDateUtc: conversation.lastUpdatedDateUtc,
       messages: conversation.items
         .filter((item) => item.visibility === 'user')
-        .map((item): AssistantConversationMessageDto => ({
-          actorDisplayName: item.actorDisplayName,
-          actorUserId: item.actorUserId,
-          citations: this.getMessageCitations(item.structuredPayload),
-          createdDateUtc: item.createdDateUtc,
-          id: item.id,
-          role: item.role,
-          text: item.text,
-        })),
+        .map(
+          (item): AssistantConversationMessageDto => ({
+            actorDisplayName: item.actorDisplayName,
+            actorUserId: item.actorUserId,
+            citations: this.getMessageCitations(item.structuredPayload),
+            createdDateUtc: item.createdDateUtc,
+            id: item.id,
+            role: item.role,
+            text: item.text,
+          }),
+        ),
       participants: conversation.participants.map(
         (participant): AssistantConversationParticipantDto => ({
           displayName: participant.displayName,

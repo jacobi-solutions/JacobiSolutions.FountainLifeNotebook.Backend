@@ -57,8 +57,8 @@ describe('McpController', () => {
           jsonrpc: '2.0',
           method: 'tools/call',
           params: {
-            arguments: { subject: 'Need help' },
-            name: 'support.create_request',
+            arguments: {},
+            name: 'fountainLife.assistants.list',
           },
         },
         { email: 'user@example.com', subject: 'user-1', username: 'User' },
@@ -78,8 +78,14 @@ describe('McpController', () => {
       },
     });
     expect(tool.execute).toHaveBeenCalledWith(
-      { subject: 'Need help' },
-      { user: { email: 'user@example.com', subject: 'user-1', username: 'User' } },
+      {},
+      {
+        user: {
+          email: 'user@example.com',
+          subject: 'user-1',
+          username: 'User',
+        },
+      },
     );
   });
 });

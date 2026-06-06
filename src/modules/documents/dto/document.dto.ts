@@ -1,4 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { DOCUMENT_PROCESSING_STATUSES } from '../document.constants';
+import type { DocumentProcessingStatus } from '../document.constants';
 
 export class DocumentDto {
   @ApiProperty()
@@ -22,8 +24,8 @@ export class DocumentDto {
   @ApiProperty()
   originalFileName!: string;
 
-  @ApiProperty({ enum: ['failed', 'ready'] })
-  status!: 'failed' | 'ready';
+  @ApiProperty({ enum: DOCUMENT_PROCESSING_STATUSES })
+  status!: DocumentProcessingStatus;
 
   @ApiProperty({ required: false })
   textPreview?: string;

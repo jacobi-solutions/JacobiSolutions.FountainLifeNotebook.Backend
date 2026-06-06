@@ -6,7 +6,7 @@ describe('sanitizeForLog', () => {
       sanitizeForLog({
         authorization: 'Bearer token',
         payload: {
-          message: 'Create a support request.',
+          message: 'Ask a document question.',
           safeMetadata: {
             count: 1,
           },

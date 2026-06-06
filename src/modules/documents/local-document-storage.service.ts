@@ -1,10 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { randomUUID } from 'crypto';
 import { mkdir, rm, writeFile } from 'fs/promises';
-import { dirname, extname, join, resolve } from 'path';
+import { dirname, relative, resolve } from 'path';
 import type { FountainLifeConfig } from '../../shared/config/app.config';
-import { DocumentStorageService, StoreDocumentRequest, StoredDocumentObject } from './document-storage.service';
+import {
+  DocumentStorageService,
+  StoreDocumentRequest,
+  StoredDocumentObject,
+} from './document-storage.service';
+import { createDocumentStorageKey } from './document-storage-key';
 
 @Injectable()
 export class LocalDocumentStorageService extends DocumentStorageService {
@@ -16,8 +20,13 @@ export class LocalDocumentStorageService extends DocumentStorageService {
     this.storageRoot = resolve(process.cwd(), config.documentStorageRoot);
   }
 
-  async storeDocument(request: StoreDocumentRequest): Promise<StoredDocumentObject> {
-    const storageKey = this.createStorageKey(request.ownerUserId, request.originalFileName);
+  async storeDocument(
+    request: StoreDocumentRequest,
+  ): Promise<StoredDocumentObject> {
+    const storageKey = createDocumentStorageKey(
+      request.ownerUserId,
+      request.originalFileName,
+    );
     const filePath = this.resolveStoragePath(storageKey);
 
     await mkdir(dirname(filePath), { recursive: true });
@@ -30,15 +39,10 @@ export class LocalDocumentStorageService extends DocumentStorageService {
     await rm(this.resolveStoragePath(storageKey), { force: true });
   }
 
-  private createStorageKey(ownerUserId: string, originalFileName: string) {
-    const ownerSegment = ownerUserId.replace(/[^a-zA-Z0-9._-]/g, '_');
-    const extension = extname(originalFileName).toLowerCase();
-    return join(ownerSegment, `${randomUUID()}${extension}`);
-  }
-
   private resolveStoragePath(storageKey: string) {
     const filePath = resolve(this.storageRoot, storageKey);
-    if (!filePath.startsWith(this.storageRoot)) {
+    const relativePath = relative(this.storageRoot, filePath);
+    if (relativePath.startsWith('..') || relativePath === '..') {
       throw new Error('Resolved document path escaped the storage root.');
     }
 

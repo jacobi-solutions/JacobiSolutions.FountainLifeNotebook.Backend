@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentChunkingService } from './document-chunking.service';
@@ -12,6 +12,8 @@ const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private readonly documentsRepository: DocumentsRepository,
     private readonly chunksRepository: DocumentChunksRepository,
@@ -36,33 +38,46 @@ export class DocumentsService {
       ownerUserId: user.subject,
     });
 
+    let document: DocumentRecordDocument | undefined;
+
     try {
       const text = await this.textExtractor.extractText(file.buffer, file.originalname, file.mimetype);
       const chunks = await this.chunkingService.splitText(text);
-      const document = await this.documentsRepository.create({
+      const createdDocument = await this.documentsRepository.create({
         byteSize: file.size,
-        chunkCount: chunks.length,
+        chunkCount: 0,
         contentType: file.mimetype,
         originalFileName: file.originalname,
         ownerUserId: user.subject,
-        status: 'ready',
+        status: 'failed',
         storageKey: storedDocument.storageKey,
         textPreview: createTextPreview(text),
       });
+      document = createdDocument;
 
       await this.chunksRepository.createMany(
         chunks.map((chunkText, index) => ({
           chunkIndex: index,
-          documentId: document.id,
-          documentName: document.originalFileName,
+          documentId: createdDocument.id,
+          documentName: createdDocument.originalFileName,
           ownerUserId: user.subject,
           text: chunkText,
         })),
       );
 
-      return this.toDto(document);
+      const readyDocument = await this.documentsRepository.updateById(createdDocument.id, {
+        $set: {
+          chunkCount: chunks.length,
+          status: 'ready',
+        },
+      });
+      if (!readyDocument) {
+        throw new Error('Document was not found after upload.');
+      }
+
+      return this.toDto(readyDocument);
     } catch (error) {
-      await this.storageService.deleteDocument(storedDocument.storageKey);
+      await this.cleanupFailedUpload(storedDocument.storageKey, document, user.subject);
       throw error;
     }
   }
@@ -77,9 +92,9 @@ export class DocumentsService {
       throw new NotFoundException('Document was not found.');
     }
 
+    await this.storageService.deleteDocument(document.storageKey);
     await this.chunksRepository.deleteByDocumentIdForOwner(documentId, user.subject);
     const deleted = await this.documentsRepository.deleteByIdForOwner(documentId, user.subject);
-    await this.storageService.deleteDocument(document.storageKey);
 
     return { deleted };
   }
@@ -96,6 +111,33 @@ export class DocumentsService {
       status: document.status,
       textPreview: document.textPreview,
     };
+  }
+
+  private async cleanupFailedUpload(
+    storageKey: string,
+    document: DocumentRecordDocument | undefined,
+    ownerUserId: string,
+  ) {
+    const cleanupTasks: Promise<unknown>[] = [this.storageService.deleteDocument(storageKey)];
+
+    if (document) {
+      cleanupTasks.push(
+        this.chunksRepository.deleteByDocumentIdForOwner(document.id, ownerUserId),
+        this.documentsRepository.deleteByIdForOwner(document.id, ownerUserId),
+      );
+    }
+
+    const cleanupResults = await Promise.allSettled(cleanupTasks);
+    for (const result of cleanupResults) {
+      if (result.status === 'rejected') {
+        this.logger.warn({
+          documentId: document?.id,
+          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+          event: 'document.upload_cleanup_failed',
+          storageKey,
+        });
+      }
+    }
   }
 }
 

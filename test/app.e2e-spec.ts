@@ -114,5 +114,19 @@ describe('Fountain Life Notebook API e2e', () => {
     );
     expect(assistantService.getConversation).not.toHaveBeenCalled();
   });
+
+  it('returns a structured SSE failure when assistant streaming fails', async () => {
+    assistantService.streamMessage.mockImplementationOnce(async function* () {
+      throw new Error('retrieval failed');
+    });
+
+    const response = await request(app.getHttpServer())
+      .post('/api/assistants/notebook/messages/stream')
+      .send({ payload: { message: 'hello' } })
+      .expect(200);
+
+    expect(response.text).toContain('ASSISTANT_STREAM_ERROR');
+    expect(response.text).toContain('retrieval failed');
+  });
 });
 import { AuthenticatedUserGuard } from '../src/modules/auth/authenticated-user.guard';

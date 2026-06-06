@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Param, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Logger, Param, Post, Res, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { ResponseFactory } from '../../shared/contracts/response.factory';
@@ -19,6 +19,8 @@ import { SendAssistantMessageDto } from './dto/send-assistant-message.dto';
 @UseGuards(AuthenticatedUserGuard)
 @Controller('assistants')
 export class AssistantController {
+  private readonly logger = new Logger(AssistantController.name);
+
   constructor(private readonly assistantService: AssistantService) {}
 
   @Post('list')
@@ -82,10 +84,35 @@ export class AssistantController {
       return;
     }
 
-    for await (const update of this.assistantService.streamMessage(assistantKey, request.payload, user)) {
-      response.write(`data: ${JSON.stringify(ResponseFactory.success(update, correlationId))}\n\n`);
-    }
+    try {
+      for await (const update of this.assistantService.streamMessage(assistantKey, request.payload, user)) {
+        response.write(`data: ${JSON.stringify(ResponseFactory.success(update, correlationId))}\n\n`);
+      }
+    } catch (error) {
+      this.logger.error({
+        assistantKey,
+        correlationId,
+        error: error instanceof Error ? error.message : String(error),
+        event: 'assistant.stream_failed',
+        userId: user.subject,
+      });
 
-    response.end();
+      if (!response.writableEnded) {
+        response.write(
+          `data: ${JSON.stringify(
+            ResponseFactory.failure(
+              {
+                errorCode: 'ASSISTANT_STREAM_ERROR',
+                errorMessage:
+                  error instanceof Error ? error.message : 'The assistant stream failed unexpectedly.',
+              },
+              correlationId,
+            ),
+          )}\n\n`,
+        );
+      }
+    } finally {
+      response.end();
+    }
   }
 }

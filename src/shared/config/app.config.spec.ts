@@ -13,6 +13,19 @@ describe('validateConfig', () => {
     expect(validateConfig(config)).toBe(config);
   });
 
+  it('accepts node-style log level aliases', () => {
+    const config = {
+      AUTH_MODE: 'local',
+      DOCUMENT_STORAGE_PROVIDER: 'local',
+      LLM_PROVIDER: 'mock',
+      LOG_LEVEL: 'info',
+      MONGODB_DATABASE: 'fountain-life-notebook',
+      MONGODB_URI: 'mongodb://localhost:27017/fountain-life-notebook',
+    };
+
+    expect(validateConfig(config)).toBe(config);
+  });
+
   it('requires production deployments to use Cognito, S3, and OpenAI', () => {
     expect(() =>
       validateConfig({

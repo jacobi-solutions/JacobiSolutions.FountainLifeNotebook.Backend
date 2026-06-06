@@ -3,7 +3,7 @@ services:
     image: mongo:8.0
     container_name: fountain-life-notebook-mongo
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
 
@@ -21,6 +21,10 @@ services:
       DOCUMENT_STORAGE_ROOT: var/uploads
       FRONTEND_ORIGIN: http://localhost:5173
       LLM_PROVIDER: mock
+      LOG_APPLICATION_NAME: FountainLifeNotebook.Backend
+      LOG_DIRECTORY: var/logs
+      LOG_FILE_NAME: backend-%DATE%.log
+      LOG_LEVEL: Information
       LOCAL_AUTH_EMAIL: local.user@fountainlife.local
       LOCAL_AUTH_USER_ID: local-user
       LOCAL_AUTH_USERNAME: Local User
@@ -29,7 +33,7 @@ services:
       OPENAI_MODEL: gpt-4.1-mini
       PORT: 3000
     ports:
-      - "3000:3000"
+      - '3000:3000'
     volumes:
       - .:/app
       - backend_node_modules:/app/node_modules
@@ -45,14 +49,14 @@ services:
     environment:
       VITE_API_BASE_URL: http://localhost:3000/api
       VITE_AUTH_MODE: local
-      VITE_COGNITO_AUTHORITY: ""
-      VITE_COGNITO_CLIENT_ID: ""
+      VITE_COGNITO_AUTHORITY: ''
+      VITE_COGNITO_CLIENT_ID: ''
       VITE_COGNITO_REDIRECT_URI: http://localhost:5173
       VITE_LOCAL_AUTH_EMAIL: local.user@fountainlife.local
       VITE_LOCAL_AUTH_USER_ID: local-user
       VITE_LOCAL_AUTH_USERNAME: Local User
     ports:
-      - "5173:5173"
+      - '5173:5173'
     volumes:
       - ../fountain-life-notebook.frontend:/app
       - frontend_node_modules:/app/node_modules

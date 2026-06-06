@@ -16,6 +16,8 @@ NestJS API for the Fountain Life interview NotebookLM-style app.
 - MCP: JSON-RPC style MCP controller and registry expose app tools, starting with assistant discovery.
 - Secrets/storage: AWS Secrets Manager and S3 service wrappers are available, while local storage remains the default for fast development.
 
+Architecture conventions and layer rules are captured in [docs/architecture.md](docs/architecture.md).
+
 ## Local Setup
 
 ### Option A: One Command With Docker
@@ -109,6 +111,34 @@ docker rm fountain-life-notebook-mongo
 ```
 
 For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=openai`, and provide the required Cognito, S3, MongoDB, and OpenAI settings. Startup validation fails fast if any production provider is missing.
+
+## Local Logs
+
+Backend logs are written as JSON lines to both the console and the local log file:
+
+```text
+var/logs/backend-YYYY-MM-DD.log
+```
+
+The folder is created automatically at startup. The default minimum level is `Information`, and the default filename rolls daily.
+
+Useful commands:
+
+```bash
+tail -f var/logs/backend-$(date +%F).log
+jq . var/logs/backend-$(date +%F).log
+```
+
+Logging can be configured with:
+
+```bash
+LOG_APPLICATION_NAME=FountainLifeNotebook.Backend
+LOG_DIRECTORY=var/logs
+LOG_FILE_NAME=backend-%DATE%.log
+LOG_LEVEL=Information
+```
+
+`%DATE%` is replaced with the log entry date in `YYYY-MM-DD` format. Use a fixed value such as `backend.log` if daily files are not wanted. Supported levels are `Fatal`, `Error`, `Warning`, `Information`, `Debug`, and `Verbose`.
 
 ## Contracts
 

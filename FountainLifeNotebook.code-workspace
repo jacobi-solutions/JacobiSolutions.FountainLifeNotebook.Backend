@@ -73,12 +73,10 @@
         },
         "isBackground": true,
         "problemMatcher": {
-          "owner": "custom",
-          "pattern": [
-            {
-              "regexp": "."
-            }
-          ],
+          "owner": "vite",
+          "pattern": {
+            "regexp": "^$"
+          },
           "background": {
             "activeOnStart": true,
             "beginsPattern": ".",

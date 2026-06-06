@@ -9,6 +9,15 @@ Central policy:
 
 - Keep the Nest API aligned with Fountain Life Notebook's document Q&A service boundaries.
 - Validate config, API contracts, auth, and persistence before merge.
+- Preserve the documented backend architecture and layer boundaries.
+
+## Required Reading
+
+Before backend implementation work, read:
+
+1. `/Users/shanedrye/jacobi/codex/ENGINEERING_DELIVERY_WORKFLOW.md`
+2. `/Users/shanedrye/jacobi/Ramin/codex/ENGINEERING_DELIVERY_WORKFLOW.md`
+3. `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend/docs/architecture.md`
 
 ## Repo Scope
 
@@ -28,6 +37,7 @@ Run from this repo root:
 
 ## Architecture Rules
 
+- Follow `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend/docs/architecture.md`.
 - Keep controllers thin; put business behavior in services.
 - Keep persistence in repositories or persistence-focused providers.
 - Keep configuration fail-fast and document required variables in `.env.example`.

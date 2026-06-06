@@ -1,4 +1,8 @@
 import { registerAs } from '@nestjs/config';
+import {
+  normalizeMinimumLogLevel,
+  type MinimumLogLevel,
+} from '../logging/json-file.logger';
 
 const APP_ENVIRONMENTS = ['local', 'test', 'production'] as const;
 const AUTH_MODES = ['cognito', 'local'] as const;
@@ -22,6 +26,10 @@ export interface FountainLifeConfig {
   documentStorageRoot: string;
   frontendOrigin: string;
   llmProvider: LlmProvider;
+  logApplicationName: string;
+  logDirectory: string;
+  logFileName: string;
+  logLevel: MinimumLogLevel;
   mongodbDatabase: string;
   mongodbUri: string;
   openAiApiKey?: string;
@@ -68,6 +76,11 @@ export const appConfig = registerAs('fountainLife', (): FountainLifeConfig => {
       'mock',
       'LLM_PROVIDER',
     ),
+    logApplicationName:
+      process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
+    logDirectory: process.env.LOG_DIRECTORY ?? 'var/logs',
+    logFileName: process.env.LOG_FILE_NAME ?? 'backend-%DATE%.log',
+    logLevel: normalizeMinimumLogLevel(process.env.LOG_LEVEL),
     mongodbDatabase: process.env.MONGODB_DATABASE ?? 'fountain-life-notebook',
     mongodbUri: process.env.MONGODB_URI ?? '',
     openAiApiKey: process.env.OPENAI_API_KEY,
@@ -97,6 +110,7 @@ export function validateConfig(config: Record<string, unknown>) {
     'mock',
     'LLM_PROVIDER',
   );
+  normalizeMinimumLogLevel(config.LOG_LEVEL);
   const required = ['MONGODB_DATABASE', 'MONGODB_URI'];
 
   if (authMode === 'cognito') {

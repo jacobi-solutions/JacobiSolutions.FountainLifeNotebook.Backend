@@ -59,7 +59,23 @@ Reset local Mongo data and uploaded files:
 docker compose -f docker-compose.local.yml down -v
 ```
 
-### Option B: Manual Local Development
+### Option B: VS Code Debugger
+
+Open the workspace file from this backend repo:
+
+```text
+FountainLifeNotebook.code-workspace
+```
+
+Then use VS Code's Run and Debug panel:
+
+- `Full Stack: Debug Backend + Frontend` starts Docker Mongo, runs the backend through `npm run start:debug`, starts the frontend through `npm run dev`, and opens Chrome at `http://localhost:5173`.
+- `Backend: Debug API + Docker Mongo` starts Docker Mongo and runs only the backend debugger.
+- `Backend: Debug API` runs only the backend debugger and expects Mongo to already be running.
+
+The debugger uses the same normal npm scripts you would run in the terminal. Backend breakpoints work in TypeScript controller, service, repository, and agent files.
+
+### Option C: Manual Local Development
 
 ```bash
 npm ci

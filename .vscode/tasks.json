@@ -1,0 +1,29 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Mongo: Up",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml up -d mongo",
+      "problemMatcher": []
+    },
+    {
+      "label": "Mongo: Down",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml down",
+      "problemMatcher": []
+    },
+    {
+      "label": "App: Compose Up",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml up",
+      "problemMatcher": []
+    },
+    {
+      "label": "App: Compose Down",
+      "type": "shell",
+      "command": "docker compose -f docker-compose.local.yml down",
+      "problemMatcher": []
+    }
+  ]
+}

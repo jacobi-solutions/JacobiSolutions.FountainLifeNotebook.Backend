@@ -1,0 +1,62 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Backend: Debug API",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:debug"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "APP_ENV": "local",
+        "AUTH_MODE": "local",
+        "AWS_REGION": "us-east-1",
+        "DOCUMENT_STORAGE_PROVIDER": "local",
+        "DOCUMENT_STORAGE_ROOT": "var/uploads",
+        "FRONTEND_ORIGIN": "http://localhost:5173",
+        "LLM_PROVIDER": "mock",
+        "LOCAL_AUTH_EMAIL": "local.user@fountainlife.local",
+        "LOCAL_AUTH_USER_ID": "local-user",
+        "LOCAL_AUTH_USERNAME": "Local User",
+        "MONGODB_DATABASE": "fountain-life-notebook",
+        "MONGODB_URI": "mongodb://localhost:27017/fountain-life-notebook",
+        "OPENAI_MODEL": "gpt-4.1-mini",
+        "PORT": "3000"
+      }
+    },
+    {
+      "name": "Backend: Debug API + Docker Mongo",
+      "type": "node",
+      "request": "launch",
+      "preLaunchTask": "Mongo: Up",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "start:debug"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "autoAttachChildProcesses": true,
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "env": {
+        "APP_ENV": "local",
+        "AUTH_MODE": "local",
+        "AWS_REGION": "us-east-1",
+        "DOCUMENT_STORAGE_PROVIDER": "local",
+        "DOCUMENT_STORAGE_ROOT": "var/uploads",
+        "FRONTEND_ORIGIN": "http://localhost:5173",
+        "LLM_PROVIDER": "mock",
+        "LOCAL_AUTH_EMAIL": "local.user@fountainlife.local",
+        "LOCAL_AUTH_USER_ID": "local-user",
+        "LOCAL_AUTH_USERNAME": "Local User",
+        "MONGODB_DATABASE": "fountain-life-notebook",
+        "MONGODB_URI": "mongodb://localhost:27017/fountain-life-notebook",
+        "OPENAI_MODEL": "gpt-4.1-mini",
+        "PORT": "3000"
+      }
+    }
+  ]
+}

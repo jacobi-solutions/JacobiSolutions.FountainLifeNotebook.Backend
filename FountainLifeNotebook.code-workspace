@@ -1,0 +1,106 @@
+{
+  "folders": [
+    {
+      "name": "Backend",
+      "path": "."
+    },
+    {
+      "name": "Frontend",
+      "path": "../fountain-life-notebook.frontend"
+    }
+  ],
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Backend: Debug API",
+        "type": "node",
+        "request": "launch",
+        "runtimeExecutable": "npm",
+        "runtimeArgs": ["run", "start:debug"],
+        "cwd": "${workspaceFolder:Backend}",
+        "console": "integratedTerminal",
+        "autoAttachChildProcesses": true,
+        "sourceMaps": true,
+        "skipFiles": ["<node_internals>/**"],
+        "env": {
+          "APP_ENV": "local",
+          "AUTH_MODE": "local",
+          "AWS_REGION": "us-east-1",
+          "DOCUMENT_STORAGE_PROVIDER": "local",
+          "DOCUMENT_STORAGE_ROOT": "var/uploads",
+          "FRONTEND_ORIGIN": "http://localhost:5173",
+          "LLM_PROVIDER": "mock",
+          "LOCAL_AUTH_EMAIL": "local.user@fountainlife.local",
+          "LOCAL_AUTH_USER_ID": "local-user",
+          "LOCAL_AUTH_USERNAME": "Local User",
+          "MONGODB_DATABASE": "fountain-life-notebook",
+          "MONGODB_URI": "mongodb://localhost:27017/fountain-life-notebook",
+          "OPENAI_MODEL": "gpt-4.1-mini",
+          "PORT": "3000"
+        }
+      },
+      {
+        "name": "Frontend: Debug Chrome",
+        "type": "chrome",
+        "request": "launch",
+        "preLaunchTask": "Frontend: Dev Server",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:Frontend}/app",
+        "sourceMaps": true
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Full Stack: Debug Backend + Frontend",
+        "configurations": ["Backend: Debug API", "Frontend: Debug Chrome"],
+        "preLaunchTask": "Mongo: Up"
+      }
+    ]
+  },
+  "tasks": {
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "label": "Mongo: Up",
+        "type": "shell",
+        "command": "docker compose -f docker-compose.local.yml up -d mongo",
+        "options": {
+          "cwd": "${workspaceFolder:Backend}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Mongo: Down",
+        "type": "shell",
+        "command": "docker compose -f docker-compose.local.yml down",
+        "options": {
+          "cwd": "${workspaceFolder:Backend}"
+        },
+        "problemMatcher": []
+      },
+      {
+        "label": "Frontend: Dev Server",
+        "type": "shell",
+        "command": "npm run dev -- --host 127.0.0.1",
+        "options": {
+          "cwd": "${workspaceFolder:Frontend}"
+        },
+        "isBackground": true,
+        "problemMatcher": {
+          "owner": "custom",
+          "pattern": [
+            {
+              "regexp": "."
+            }
+          ],
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".",
+            "endsPattern": "Local:\\s+http://127\\.0\\.0\\.1:5173"
+          }
+        }
+      }
+    ]
+  }
+}

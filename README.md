@@ -18,6 +18,49 @@ NestJS API for the Fountain Life interview NotebookLM-style app.
 
 ## Local Setup
 
+### Option A: One Command With Docker
+
+This is the easiest path for someone who does not want to install MongoDB or Node.js locally.
+It assumes the backend and frontend repos are cloned as siblings:
+
+```text
+Ramin/
+  FountainLifeNotebook.Backend/
+  fountain-life-notebook.frontend/
+```
+
+Start Docker Desktop, then run from this backend repo:
+
+```bash
+docker compose -f docker-compose.local.yml up
+```
+
+Open the app:
+
+```text
+http://localhost:5173
+```
+
+API health check:
+
+```text
+http://localhost:3000/api/health
+```
+
+Stop the app:
+
+```bash
+docker compose -f docker-compose.local.yml down
+```
+
+Reset local Mongo data and uploaded files:
+
+```bash
+docker compose -f docker-compose.local.yml down -v
+```
+
+### Option B: Manual Local Development
+
 ```bash
 npm ci
 cp .env.example .env
@@ -33,6 +76,19 @@ MONGODB_URI=mongodb://localhost:27017/fountain-life-notebook
 ```
 
 Protected endpoints receive a deterministic local user from `LOCAL_AUTH_*` environment variables or `X-Local-*` request headers. To use Cognito instead, set `AUTH_MODE=cognito` and provide `AWS_REGION`, `COGNITO_CLIENT_ID`, and `COGNITO_USER_POOL_ID`.
+
+For manual local development, start MongoDB first. The simplest Docker-only Mongo command is:
+
+```bash
+docker run --name fountain-life-notebook-mongo -p 27017:27017 -d mongo:8.0
+```
+
+When finished:
+
+```bash
+docker stop fountain-life-notebook-mongo
+docker rm fountain-life-notebook-mongo
+```
 
 For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=openai`, and provide the required Cognito, S3, MongoDB, and OpenAI settings. Startup validation fails fast if any production provider is missing.
 

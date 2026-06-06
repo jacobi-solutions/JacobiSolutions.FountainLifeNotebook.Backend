@@ -17,7 +17,7 @@ import { AssistantConversation as AssistantConversationContract } from './data-c
 import { AssistantConversationMessage } from './data-contracts/assistant-conversation-message';
 import { AssistantConversationParticipant as AssistantConversationParticipantContract } from './data-contracts/assistant-conversation-participant';
 import { Citation } from './data-contracts/citation';
-import type { SendAssistantMessagePayload } from './data-contracts/send-assistant-message';
+import type { SendAssistantMessageRequest } from './data-contracts/send-assistant-message-request';
 import {
   AssistantConversation,
   AssistantConversationDocument,
@@ -47,7 +47,7 @@ export class AssistantService {
 
   async *streamMessage(
     assistantKey: string,
-    request: SendAssistantMessagePayload,
+    request: SendAssistantMessageRequest,
     user: AuthenticatedUser,
   ): AsyncGenerator<AssistantThreadUpdate> {
     const handler = this.assistantRegistry.getOrThrow(assistantKey);
@@ -120,7 +120,7 @@ export class AssistantService {
 
   private async loadOrCreateConversation(
     assistantKey: string,
-    request: SendAssistantMessagePayload,
+    request: SendAssistantMessageRequest,
     user: AuthenticatedUser,
   ) {
     if (request.conversationId) {

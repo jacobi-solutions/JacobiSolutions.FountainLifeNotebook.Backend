@@ -16,18 +16,18 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ResponseFactory } from '../../shared/data-contracts/response.factory';
+import { ResponseFactory } from '../../shared/data-contracts/response-factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { MAX_DOCUMENT_UPLOAD_BYTES } from './document.constants';
 import { DocumentsService } from './documents.service';
-import { DeleteDocumentRequest } from './data-contracts/delete-document';
-import { DeleteDocumentResponse } from './data-contracts/delete-document-response';
-import { ListDocumentsRequest } from './data-contracts/list-documents';
+import { DeleteDocumentRequest } from './data-contracts/delete-document-request';
+import { ListDocumentsRequest } from './data-contracts/list-documents-request';
 import { ListDocumentsResponse } from './data-contracts/list-documents-response';
 import { UploadDocumentResponse } from './data-contracts/upload-document-response';
+import { BaseResponse } from '../../shared/data-contracts/base-response';
 
 @ApiBearerAuth()
 @ApiTags('documents')
@@ -62,8 +62,8 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(
-      await this.documentsService.uploadDocument(file, user),
+    return ResponseFactory.successWith(
+      { document: await this.documentsService.uploadDocument(file, user) },
       correlationId,
     );
   }
@@ -76,36 +76,32 @@ export class DocumentsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(
-      await this.documentsService.listDocuments(user),
+    return ResponseFactory.successWith(
+      { documents: await this.documentsService.listDocuments(user) },
       correlationId,
     );
   }
 
   @Post('delete-document')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ type: DeleteDocumentResponse })
+  @ApiOkResponse({ type: BaseResponse })
   async deleteDocument(
     @Body() request: DeleteDocumentRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    if (!request.payload) {
+    if (!request.documentId) {
       return ResponseFactory.failure(
         {
           errorCode: 'VALIDATION_ERROR',
-          errorMessage: 'Request payload is required.',
+          errorMessage: 'Document id is required.',
         },
         correlationId,
       );
     }
 
-    return ResponseFactory.success(
-      await this.documentsService.deleteDocument(
-        request.payload.documentId,
-        user,
-      ),
-      correlationId,
-    );
+    await this.documentsService.deleteDocument(request.documentId, user);
+
+    return ResponseFactory.success(correlationId);
   }
 }

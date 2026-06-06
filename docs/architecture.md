@@ -114,21 +114,38 @@ POST /api/documents/delete-document -> deleteDocument
 
 Each normal JSON endpoint should:
 
-1. Accept a request class extending `BaseRequest<TPayload>`.
-2. Return a response class extending `BaseResponse<TData>`.
-3. Use `ResponseFactory.success(...)` or `ResponseFactory.failure(...)`.
+1. Accept a request class extending `BaseRequest`.
+2. Put endpoint request fields directly on that request class.
+3. Return `BaseResponse` when success/failure is enough and there is no useful
+   endpoint-specific data to return.
+4. Return a response class extending `BaseResponse` when endpoint data is needed.
+5. Put endpoint response fields directly on that response class.
+6. Use `ResponseFactory.success(...)`, `ResponseFactory.successWith(...)`, or
+   `ResponseFactory.failure(...)`.
 
 Example:
 
 ```text
-DeleteDocumentRequest extends BaseRequest<DeleteDocumentPayload>
-DeleteDocumentResponse extends BaseResponse<DeleteDocumentResult>
+DeleteDocumentRequest extends BaseRequest
+ListDocumentsResponse extends BaseResponse
 ```
+
+This `BaseResponse` rule applies to any command where success/failure is the
+whole result, not only delete operations. For example, delete, clear, mark,
+acknowledge, or reset-style commands should return plain `BaseResponse` unless
+the caller needs a specific value back. Do not create empty endpoint-specific
+response classes or `Result` wrappers just to say the operation succeeded.
 
 This project intentionally uses `data-contracts` folders and role-based class
 names instead of the Nest-default `Dto` suffix. Use names such as `Request`,
-`Response`, `Payload`, `Result`, `Summary`, and `Info` so generated frontend API
-types read like normal application contracts.
+`Response`, `Summary`, and `Info` so generated frontend API types read like
+normal application contracts. Avoid `Payload` and `Result` classes unless they
+represent a reusable concept rather than a generic wrapper.
+
+Contract filenames should match their exported class names in kebab case. For
+example, `DeleteDocumentRequest` belongs in `delete-document-request.ts`. Keep
+one exported contract class per file unless there is a clear reason to do
+otherwise.
 
 The base response shape is:
 
@@ -136,8 +153,28 @@ The base response shape is:
 {
   "correlationId": "optional-correlation-id",
   "errors": [],
+  "isSuccess": true
+}
+```
+
+Responses with endpoint data should use named fields:
+
+```json
+{
+  "correlationId": "optional-correlation-id",
+  "errors": [],
   "isSuccess": true,
-  "data": {}
+  "documents": []
+}
+```
+
+Commands with no endpoint data should return only the base shape:
+
+```json
+{
+  "correlationId": "optional-correlation-id",
+  "errors": [],
+  "isSuccess": true
 }
 ```
 

@@ -1,14 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Allow, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
-export class BaseRequest<TPayload = unknown> {
+export class BaseRequest {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   correlationId?: string;
-
-  @ApiProperty({ required: false })
-  @Allow()
-  @IsOptional()
-  payload?: TPayload;
 }

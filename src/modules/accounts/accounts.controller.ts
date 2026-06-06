@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { BaseRequest } from '../../shared/data-contracts/base-request';
-import { ResponseFactory } from '../../shared/data-contracts/response.factory';
+import { ResponseFactory } from '../../shared/data-contracts/response-factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -32,8 +32,8 @@ export class AccountsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(
-      this.accountsService.getCurrentUser(user),
+    return ResponseFactory.successWith(
+      { user: this.accountsService.getCurrentUser(user) },
       correlationId,
     );
   }
@@ -46,8 +46,8 @@ export class AccountsController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(
-      await this.accountsService.registerCurrentUser(user),
+    return ResponseFactory.successWith(
+      { account: await this.accountsService.registerCurrentUser(user) },
       correlationId,
     );
   }

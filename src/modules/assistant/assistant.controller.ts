@@ -11,18 +11,18 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { ResponseFactory } from '../../shared/data-contracts/response.factory';
+import { ResponseFactory } from '../../shared/data-contracts/response-factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { AssistantService } from './assistant.service';
 import { AssistantThreadUpdateResponse } from './data-contracts/assistant-thread-update-response';
-import { GetAssistantConversationRequest } from './data-contracts/get-assistant-conversation';
+import { GetAssistantConversationRequest } from './data-contracts/get-assistant-conversation-request';
 import { GetAssistantConversationResponse } from './data-contracts/get-assistant-conversation-response';
-import { ListAssistantsRequest } from './data-contracts/list-assistants';
+import { ListAssistantsRequest } from './data-contracts/list-assistants-request';
 import { ListAssistantsResponse } from './data-contracts/list-assistants-response';
-import { SendAssistantMessageRequest } from './data-contracts/send-assistant-message';
+import { SendAssistantMessageRequest } from './data-contracts/send-assistant-message-request';
 
 @ApiBearerAuth()
 @ApiTags('assistants')
@@ -40,8 +40,8 @@ export class AssistantController {
     @Body() _request: ListAssistantsRequest,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(
-      this.assistantService.listAssistants(),
+    return ResponseFactory.successWith(
+      { assistants: this.assistantService.listAssistants() },
       correlationId,
     );
   }
@@ -54,21 +54,23 @@ export class AssistantController {
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
-    if (!request.payload) {
+    if (!request.conversationId) {
       return ResponseFactory.failure(
         {
           errorCode: 'VALIDATION_ERROR',
-          errorMessage: 'Request payload is required.',
+          errorMessage: 'Conversation id is required.',
         },
         correlationId,
       );
     }
 
-    return ResponseFactory.success(
-      await this.assistantService.getConversation(
-        request.payload.conversationId,
-        user,
-      ),
+    return ResponseFactory.successWith(
+      {
+        conversation: await this.assistantService.getConversation(
+          request.conversationId,
+          user,
+        ),
+      },
       correlationId,
     );
   }
@@ -91,13 +93,13 @@ export class AssistantController {
     response.setHeader('Cache-Control', 'no-cache');
     response.flushHeaders();
 
-    if (!request.payload) {
+    if (!request.message) {
       response.write(
         `data: ${JSON.stringify(
           ResponseFactory.failure(
             {
               errorCode: 'VALIDATION_ERROR',
-              errorMessage: 'Request payload is required.',
+              errorMessage: 'Message is required.',
             },
             correlationId,
           ),
@@ -110,11 +112,11 @@ export class AssistantController {
     try {
       for await (const update of this.assistantService.streamMessage(
         assistantKey,
-        request.payload,
+        request,
         user,
       )) {
         response.write(
-          `data: ${JSON.stringify(ResponseFactory.success(update, correlationId))}\n\n`,
+          `data: ${JSON.stringify(ResponseFactory.successWith({ update }, correlationId))}\n\n`,
         );
       }
     } catch (error) {

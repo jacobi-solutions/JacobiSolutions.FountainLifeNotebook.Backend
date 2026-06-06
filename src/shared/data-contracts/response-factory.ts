@@ -2,19 +2,30 @@ import { BaseResponse } from './base-response';
 import { ErrorInfo } from './error-info';
 
 export class ResponseFactory {
-  static success<TData>(data: TData, correlationId?: string): BaseResponse<TData> {
+  static success(correlationId?: string): BaseResponse {
     return {
       correlationId,
-      data,
       errors: [],
       isSuccess: true,
     };
   }
 
-  static failure<TData = never>(
+  static successWith<TFields extends object>(
+    fields: TFields,
+    correlationId?: string,
+  ): BaseResponse & TFields {
+    return {
+      ...fields,
+      correlationId,
+      errors: [],
+      isSuccess: true,
+    };
+  }
+
+  static failure(
     errors: ErrorInfo | ErrorInfo[],
     correlationId?: string,
-  ): BaseResponse<TData> {
+  ): BaseResponse {
     return {
       correlationId,
       errors: Array.isArray(errors) ? errors : [errors],

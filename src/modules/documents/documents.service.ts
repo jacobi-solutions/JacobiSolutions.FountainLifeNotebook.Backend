@@ -34,7 +34,7 @@ export class DocumentsService {
     );
   }
 
-  async deleteDocument(documentId: string, user: AuthenticatedUser) {
+  async deleteDocument(documentId: string, user: AuthenticatedUser): Promise<void> {
     const document = await this.documentsRepository.findByIdForOwner(
       documentId,
       user.subject,
@@ -48,12 +48,10 @@ export class DocumentsService {
       documentId,
       user.subject,
     );
-    const deleted = await this.documentsRepository.deleteByIdForOwner(
+    await this.documentsRepository.deleteByIdForOwner(
       documentId,
       user.subject,
     );
-
-    return { deleted };
   }
 
   toSummary(document: DocumentRecord | DocumentRecordDocument): DocumentSummary {

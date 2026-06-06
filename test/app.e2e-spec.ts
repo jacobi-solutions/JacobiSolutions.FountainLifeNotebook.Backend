@@ -93,18 +93,18 @@ describe('Fountain Life Notebook API e2e', () => {
     );
   });
 
-  it('accepts a nested base-request payload for POST endpoints', async () => {
+  it('accepts direct request fields for POST endpoints', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/assistants/get-conversation')
-      .send({ payload: { conversationId: 'conversation-1' } })
+      .send({ conversationId: 'conversation-1' })
       .expect(200);
 
     expect(response.body).toEqual(
       expect.objectContaining({
-        correlationId: 'e2e-correlation-id',
-        data: expect.objectContaining({
+        conversation: expect.objectContaining({
           id: 'conversation-1',
         }),
+        correlationId: 'e2e-correlation-id',
         errors: [],
         isSuccess: true,
       }),
@@ -115,10 +115,10 @@ describe('Fountain Life Notebook API e2e', () => {
     );
   });
 
-  it('rejects invalid nested payloads before controller execution', async () => {
+  it('rejects invalid direct request fields before controller execution', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/assistants/get-conversation')
-      .send({ payload: {} })
+      .send({})
       .expect(400);
 
     expect(response.body).toEqual(
@@ -137,7 +137,7 @@ describe('Fountain Life Notebook API e2e', () => {
 
     const response = await request(app.getHttpServer())
       .post('/api/assistants/notebook/stream-message')
-      .send({ payload: { message: 'hello' } })
+      .send({ message: 'hello' })
       .expect(200);
 
     expect(response.text).toContain('ASSISTANT_STREAM_ERROR');

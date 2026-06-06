@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ErrorInfo } from './error-info';
 
-export class BaseResponse<TData = unknown> {
+export class BaseResponse {
   @ApiProperty({ required: false })
   correlationId?: string;
 
@@ -11,6 +11,4 @@ export class BaseResponse<TData = unknown> {
   @ApiProperty({ type: Boolean })
   isSuccess = true;
 
-  @ApiProperty({ required: false })
-  data?: TData;
 }

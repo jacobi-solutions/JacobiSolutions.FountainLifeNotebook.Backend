@@ -91,7 +91,7 @@ describe('DocumentsService', () => {
         subject: 'user-1',
         username: 'user@example.com',
       }),
-    ).resolves.toEqual({ deleted: true });
+    ).resolves.toBeUndefined();
 
     expect(order).toEqual(['storage', 'chunks', 'document']);
   });

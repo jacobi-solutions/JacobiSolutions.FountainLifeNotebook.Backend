@@ -291,7 +291,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeleteDocumentResponse"
+                  "$ref": "#/components/schemas/BaseResponse"
                 }
               }
             }
@@ -373,9 +373,6 @@
         "properties": {
           "correlationId": {
             "type": "string"
-          },
-          "payload": {
-            "type": "object"
           }
         }
       },
@@ -428,13 +425,14 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "user": {
             "$ref": "#/components/schemas/AuthenticatedUserInfo"
           }
         },
         "required": [
           "errors",
-          "isSuccess"
+          "isSuccess",
+          "user"
         ]
       },
       "AccountSummary": {
@@ -475,13 +473,14 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "account": {
             "$ref": "#/components/schemas/AccountSummary"
           }
         },
         "required": [
           "errors",
-          "isSuccess"
+          "isSuccess",
+          "account"
         ]
       },
       "ListAssistantsRequest": {
@@ -489,9 +488,6 @@
         "properties": {
           "correlationId": {
             "type": "string"
-          },
-          "payload": {
-            "type": "object"
           }
         }
       },
@@ -529,7 +525,7 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "assistants": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AssistantSummary"
@@ -538,18 +534,8 @@
         },
         "required": [
           "errors",
-          "isSuccess"
-        ]
-      },
-      "GetAssistantConversationPayload": {
-        "type": "object",
-        "properties": {
-          "conversationId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "conversationId"
+          "isSuccess",
+          "assistants"
         ]
       },
       "GetAssistantConversationRequest": {
@@ -558,10 +544,13 @@
           "correlationId": {
             "type": "string"
           },
-          "payload": {
-            "$ref": "#/components/schemas/GetAssistantConversationPayload"
+          "conversationId": {
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "conversationId"
+        ]
       },
       "Citation": {
         "type": "object",
@@ -717,18 +706,22 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "conversation": {
             "$ref": "#/components/schemas/AssistantConversation"
           }
         },
         "required": [
           "errors",
-          "isSuccess"
+          "isSuccess",
+          "conversation"
         ]
       },
-      "SendAssistantMessagePayload": {
+      "SendAssistantMessageRequest": {
         "type": "object",
         "properties": {
+          "correlationId": {
+            "type": "string"
+          },
           "message": {
             "type": "string"
           },
@@ -751,17 +744,6 @@
         "required": [
           "message"
         ]
-      },
-      "SendAssistantMessageRequest": {
-        "type": "object",
-        "properties": {
-          "correlationId": {
-            "type": "string"
-          },
-          "payload": {
-            "$ref": "#/components/schemas/SendAssistantMessagePayload"
-          }
-        }
       },
       "AssistantThreadUpdate": {
         "type": "object",
@@ -819,13 +801,14 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "update": {
             "$ref": "#/components/schemas/AssistantThreadUpdate"
           }
         },
         "required": [
           "errors",
-          "isSuccess"
+          "isSuccess",
+          "update"
         ]
       },
       "DocumentSummary": {
@@ -891,13 +874,14 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "document": {
             "$ref": "#/components/schemas/DocumentSummary"
           }
         },
         "required": [
           "errors",
-          "isSuccess"
+          "isSuccess",
+          "document"
         ]
       },
       "ListDocumentsRequest": {
@@ -905,9 +889,6 @@
         "properties": {
           "correlationId": {
             "type": "string"
-          },
-          "payload": {
-            "type": "object"
           }
         }
       },
@@ -926,7 +907,7 @@
           "isSuccess": {
             "type": "boolean"
           },
-          "data": {
+          "documents": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentSummary"
@@ -935,18 +916,8 @@
         },
         "required": [
           "errors",
-          "isSuccess"
-        ]
-      },
-      "DeleteDocumentPayload": {
-        "type": "object",
-        "properties": {
-          "documentId": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "documentId"
+          "isSuccess",
+          "documents"
         ]
       },
       "DeleteDocumentRequest": {
@@ -955,23 +926,15 @@
           "correlationId": {
             "type": "string"
           },
-          "payload": {
-            "$ref": "#/components/schemas/DeleteDocumentPayload"
-          }
-        }
-      },
-      "DeleteDocumentResult": {
-        "type": "object",
-        "properties": {
-          "deleted": {
-            "type": "boolean"
+          "documentId": {
+            "type": "string"
           }
         },
         "required": [
-          "deleted"
+          "documentId"
         ]
       },
-      "DeleteDocumentResponse": {
+      "BaseResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -985,9 +948,6 @@
           },
           "isSuccess": {
             "type": "boolean"
-          },
-          "data": {
-            "$ref": "#/components/schemas/DeleteDocumentResult"
           }
         },
         "required": [

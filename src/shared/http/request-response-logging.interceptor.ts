@@ -6,7 +6,7 @@ import {
   NestInterceptor,
 } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { ResponseFactory } from '../data-contracts/response.factory';
+import { ResponseFactory } from '../data-contracts/response-factory';
 import type { RequestWithCorrelationId } from './request-with-correlation-id';
 
 @Injectable()

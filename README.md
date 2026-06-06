@@ -71,9 +71,11 @@ Then use VS Code's Run and Debug panel:
 
 - `Full Stack: Debug Backend + Frontend` starts Docker Mongo, runs the backend through `npm run start:debug`, starts the frontend through `npm run dev`, and opens Chrome at `http://localhost:5173`.
 - `Backend: Debug API + Docker Mongo` starts Docker Mongo and runs only the backend debugger.
-- `Backend: Debug API` runs only the backend debugger and expects Mongo to already be running.
+- `Backend: Debug API` runs only the backend debugger, reads `.env`, and expects the configured Mongo connection to already be available.
 
 The debugger uses the same normal npm scripts you would run in the terminal. Backend breakpoints work in TypeScript controller, service, repository, and agent files.
+
+If Docker fails or you want to use a MongoDB sandbox, copy `.env.example` to `.env`, set `MONGODB_URI` to the sandbox connection string, and run `Backend: Debug API` instead of the Docker Mongo launch profile.
 
 ### Option C: Manual Local Development
 

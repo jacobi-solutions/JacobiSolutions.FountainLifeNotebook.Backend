@@ -23,7 +23,7 @@ export abstract class BaseRepository<TModel extends BaseModel, TDocument extends
             lastUpdatedDateUtc: new Date(),
           },
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
       .exec();
   }

@@ -1,0 +1,675 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/accounts/me": {
+      "post": {
+        "operationId": "AccountsController_getMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaseRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/accounts/register": {
+      "post": {
+        "operationId": "AccountsController_register",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BaseRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegisterAccountResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "accounts"
+        ]
+      }
+    },
+    "/assistants/list": {
+      "post": {
+        "operationId": "AssistantController_listAssistants",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListAssistantsRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListAssistantsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "assistants"
+        ]
+      }
+    },
+    "/assistants/conversation/get": {
+      "post": {
+        "operationId": "AssistantController_getConversation",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetAssistantConversationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetAssistantConversationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "assistants"
+        ]
+      }
+    },
+    "/assistants/{assistantKey}/messages/stream": {
+      "post": {
+        "operationId": "AssistantController_streamMessage",
+        "parameters": [
+          {
+            "name": "assistantKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAssistantMessageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Server-sent event stream. Each data event is an AssistantThreadUpdateResponseDto.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AssistantThreadUpdateResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "assistants"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "health"
+        ]
+      }
+    },
+    "/mcp": {
+      "post": {
+        "operationId": "McpController_post",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "JSON-RPC 2.0 response for the MCP streamable HTTP transport."
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mcp"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Fountain Life Notebook API",
+    "description": "NestJS API for the Fountain Life interview NotebookLM-style app.",
+    "version": "0.1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "BaseRequestDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "ErrorDto": {
+        "type": "object",
+        "properties": {
+          "errorMessage": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "errorMessage"
+        ]
+      },
+      "AuthenticatedUserDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "subject": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "subject",
+          "username"
+        ]
+      },
+      "CurrentUserResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AuthenticatedUserDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "AccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "cognitoSubject": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "username": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "cognitoSubject",
+          "email",
+          "username"
+        ]
+      },
+      "RegisterAccountResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AccountResponseDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "ListAssistantsRequestDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "AssistantSummaryDto": {
+        "type": "object",
+        "properties": {
+          "description": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "key",
+          "name"
+        ]
+      },
+      "ListAssistantsResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantSummaryDto"
+            }
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "GetAssistantConversationPayloadDto": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "conversationId"
+        ]
+      },
+      "GetAssistantConversationRequestDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/GetAssistantConversationPayloadDto"
+          }
+        }
+      },
+      "AssistantConversationMessageDto": {
+        "type": "object",
+        "properties": {
+          "actorDisplayName": {
+            "type": "string"
+          },
+          "actorUserId": {
+            "type": "string"
+          },
+          "createdDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "assistant",
+              "system",
+              "tool",
+              "user"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdDateUtc",
+          "id",
+          "role",
+          "text"
+        ]
+      },
+      "AssistantConversationParticipantDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "joinedDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "member",
+              "owner"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "removed"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "joinedDateUtc",
+          "role",
+          "status",
+          "userId"
+        ]
+      },
+      "AssistantConversationDto": {
+        "type": "object",
+        "properties": {
+          "assistantKey": {
+            "type": "string"
+          },
+          "createdDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantConversationMessageDto"
+            }
+          },
+          "participants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AssistantConversationParticipantDto"
+            }
+          },
+          "lastUpdatedDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "assistantKey",
+          "createdDateUtc",
+          "id",
+          "messages",
+          "participants",
+          "lastUpdatedDateUtc"
+        ]
+      },
+      "GetAssistantConversationResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssistantConversationDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "SendAssistantMessagePayloadDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "conversationId": {
+            "type": "string"
+          },
+          "participantUserIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "SendAssistantMessageDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/SendAssistantMessagePayloadDto"
+          }
+        }
+      },
+      "AssistantThreadUpdateDto": {
+        "type": "object",
+        "properties": {
+          "conversationId": {
+            "type": "string"
+          },
+          "messageId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "assistant",
+              "system",
+              "user"
+            ]
+          },
+          "text": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "message",
+              "status"
+            ]
+          }
+        },
+        "required": [
+          "conversationId",
+          "role",
+          "text",
+          "type"
+        ]
+      },
+      "AssistantThreadUpdateResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AssistantThreadUpdateDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      }
+    }
+  }
+}

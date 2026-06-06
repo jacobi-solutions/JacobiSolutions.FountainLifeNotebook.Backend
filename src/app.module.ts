@@ -6,6 +6,7 @@ import { AccountsModule } from './modules/accounts/accounts.module';
 import { AssistantModule } from './modules/assistant/assistant.module';
 import { AwsModule } from './modules/aws/aws.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { DocumentsModule } from './modules/documents/documents.module';
 import { HealthModule } from './modules/health/health.module';
 import { McpModule } from './modules/mcp/mcp.module';
 import { appConfig, validateConfig } from './shared/config/app.config';
@@ -26,6 +27,7 @@ import { RequestResponseLoggingInterceptor } from './shared/http/request-respons
     AwsModule,
     AuthModule,
     AccountsModule,
+    DocumentsModule,
     AssistantModule,
     McpModule,
     HealthModule,

@@ -18,6 +18,12 @@ export class SendAssistantMessagePayloadDto {
   @IsArray()
   @IsOptional()
   @IsString({ each: true })
+  documentIds?: string[];
+
+  @ApiProperty({ required: false, type: [String] })
+  @IsArray()
+  @IsOptional()
+  @IsString({ each: true })
   participantUserIds?: string[];
 }
 

@@ -190,6 +190,123 @@
         ]
       }
     },
+    "/documents/upload": {
+      "post": {
+        "operationId": "DocumentsController_uploadDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "file": {
+                    "format": "binary",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "file"
+                ],
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/documents/list": {
+      "post": {
+        "operationId": "DocumentsController_listDocuments",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListDocumentsRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListDocumentsResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
+    "/documents/delete": {
+      "post": {
+        "operationId": "DocumentsController_deleteDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteDocumentRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteDocumentResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/health": {
       "get": {
         "operationId": "HealthController_getHealth",
@@ -446,6 +563,29 @@
           }
         }
       },
+      "CitationDto": {
+        "type": "object",
+        "properties": {
+          "chunkIndex": {
+            "type": "number"
+          },
+          "documentId": {
+            "type": "string"
+          },
+          "documentName": {
+            "type": "string"
+          },
+          "snippet": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunkIndex",
+          "documentId",
+          "documentName",
+          "snippet"
+        ]
+      },
       "AssistantConversationMessageDto": {
         "type": "object",
         "properties": {
@@ -454,6 +594,12 @@
           },
           "actorUserId": {
             "type": "string"
+          },
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationDto"
+            }
           },
           "createdDateUtc": {
             "format": "date-time",
@@ -589,6 +735,12 @@
           "conversationId": {
             "type": "string"
           },
+          "documentIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
           "participantUserIds": {
             "type": "array",
             "items": {
@@ -614,6 +766,12 @@
       "AssistantThreadUpdateDto": {
         "type": "object",
         "properties": {
+          "citations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CitationDto"
+            }
+          },
           "conversationId": {
             "type": "string"
           },
@@ -663,6 +821,173 @@
           },
           "data": {
             "$ref": "#/components/schemas/AssistantThreadUpdateDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "DocumentDto": {
+        "type": "object",
+        "properties": {
+          "byteSize": {
+            "type": "number"
+          },
+          "chunkCount": {
+            "type": "number"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "createdDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastUpdatedDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "originalFileName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "ready"
+            ]
+          },
+          "textPreview": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "byteSize",
+          "chunkCount",
+          "contentType",
+          "createdDateUtc",
+          "id",
+          "lastUpdatedDateUtc",
+          "originalFileName",
+          "status"
+        ]
+      },
+      "UploadDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DocumentDto"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "ListDocumentsRequestDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          }
+        }
+      },
+      "ListDocumentsResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentDto"
+            }
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "DeleteDocumentPayloadDto": {
+        "type": "object",
+        "properties": {
+          "documentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ]
+      },
+      "DeleteDocumentRequestDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "payload": {
+            "$ref": "#/components/schemas/DeleteDocumentPayloadDto"
+          }
+        }
+      },
+      "DeleteDocumentResultDto": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "deleted"
+        ]
+      },
+      "DeleteDocumentResponseDto": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorDto"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "data": {
+            "$ref": "#/components/schemas/DeleteDocumentResultDto"
           }
         },
         "required": [

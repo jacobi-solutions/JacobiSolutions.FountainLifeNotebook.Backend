@@ -5,7 +5,9 @@ import { AssistantConversationsRepository } from './assistant-conversations.repo
 import { AssistantConversationDto } from './dto/assistant-conversation.dto';
 import { AssistantConversationMessageDto } from './dto/assistant-conversation-message.dto';
 import { AssistantConversationParticipantDto } from './dto/assistant-conversation-participant.dto';
+import { CitationDto } from './dto/citation.dto';
 import type { SendAssistantMessagePayloadDto } from './dto/send-assistant-message.dto';
+import { NotebookAgentService } from './notebook-agent.service';
 import {
   AssistantConversation,
   AssistantConversationDocument,
@@ -20,6 +22,7 @@ export interface AssistantSummary {
 }
 
 export interface AssistantThreadUpdate {
+  citations?: CitationDto[];
   conversationId: string;
   messageId?: string;
   role: 'assistant' | 'system' | 'user';
@@ -29,14 +32,17 @@ export interface AssistantThreadUpdate {
 
 @Injectable()
 export class AssistantService {
-  constructor(private readonly conversationsRepository: AssistantConversationsRepository) {}
+  constructor(
+    private readonly conversationsRepository: AssistantConversationsRepository,
+    private readonly notebookAgentService: NotebookAgentService,
+  ) {}
 
   listAssistants(): AssistantSummary[] {
     return [
       {
-        description: 'Starter support assistant wired for streaming responses.',
-        key: 'support',
-        name: 'Support Assistant',
+        description: 'Ask questions grounded in your uploaded documents.',
+        key: 'notebook',
+        name: 'Notebook Assistant',
       },
     ];
   }
@@ -65,13 +71,19 @@ export class AssistantService {
     yield {
       conversationId,
       role: 'system',
-      text: `${assistantKey} assistant received a message from ${user.username}.`,
+      text: 'Searching uploaded documents and preparing an answer.',
       type: 'status',
     };
 
+    const answer = await this.notebookAgentService.answerQuestion(
+      request.message,
+      user.subject,
+      request.documentIds,
+    );
     const assistantMessage = this.createAssistantMessage(
       turnId,
-      `Fountain Life Notebook is ready to replace this stub with a provider-backed runtime. You said: ${request.message}`,
+      answer.answer,
+      answer.citations,
     );
 
     conversation.items.push(assistantMessage);
@@ -81,6 +93,7 @@ export class AssistantService {
       conversationId,
       messageId: assistantMessage.id,
       role: 'assistant',
+      citations: answer.citations,
       text: assistantMessage.text,
       type: 'message',
     };
@@ -159,13 +172,18 @@ export class AssistantService {
     };
   }
 
-  private createAssistantMessage(turnId: string, text: string): AssistantConversationItem {
+  private createAssistantMessage(
+    turnId: string,
+    text: string,
+    citations: CitationDto[],
+  ): AssistantConversationItem {
     return {
       actorDisplayName: 'Fountain Life Notebook',
       actorType: 'assistant',
       createdDateUtc: new Date(),
       id: randomUUID(),
       role: 'assistant',
+      structuredPayload: citations.length > 0 ? { citations } : undefined,
       text,
       turnId,
       visibility: 'user',
@@ -183,6 +201,7 @@ export class AssistantService {
         .map((item): AssistantConversationMessageDto => ({
           actorDisplayName: item.actorDisplayName,
           actorUserId: item.actorUserId,
+          citations: this.getMessageCitations(item.structuredPayload),
           createdDateUtc: item.createdDateUtc,
           id: item.id,
           role: item.role,
@@ -199,4 +218,37 @@ export class AssistantService {
       ),
     };
   }
+
+  private getMessageCitations(payload?: Record<string, unknown>) {
+    const citations = payload?.citations;
+    if (!Array.isArray(citations)) {
+      return undefined;
+    }
+
+    const normalized = citations.filter(isCitation).map(
+      (citation): CitationDto => ({
+        chunkIndex: citation.chunkIndex,
+        documentId: citation.documentId,
+        documentName: citation.documentName,
+        snippet: citation.snippet,
+      }),
+    );
+
+    return normalized.length > 0 ? normalized : undefined;
+  }
+}
+
+function isCitation(value: unknown): value is CitationDto {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'chunkIndex' in value &&
+    typeof value.chunkIndex === 'number' &&
+    'documentId' in value &&
+    typeof value.documentId === 'string' &&
+    'documentName' in value &&
+    typeof value.documentName === 'string' &&
+    'snippet' in value &&
+    typeof value.snippet === 'string'
+  );
 }

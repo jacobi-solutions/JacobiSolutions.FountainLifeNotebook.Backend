@@ -1,6 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { CitationDto } from './citation.dto';
 
 export class AssistantThreadUpdateDto {
+  @ApiProperty({ required: false, type: [CitationDto] })
+  citations?: CitationDto[];
+
   @ApiProperty()
   conversationId!: string;
 

@@ -1,5 +1,17 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
@@ -23,8 +35,13 @@ export class McpController {
   @Post()
   @HttpCode(HttpStatus.OK)
   @ApiBody({ schema: { type: 'object' } })
-  @ApiOkResponse({ description: 'JSON-RPC 2.0 response for the MCP streamable HTTP transport.' })
-  async post(@Body() request: JsonRpcRequest, @CurrentUser() user: AuthenticatedUser) {
+  @ApiOkResponse({
+    description: 'JSON-RPC 2.0 response for the MCP streamable HTTP transport.',
+  })
+  async handleMcpRequest(
+    @Body() request: JsonRpcRequest,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     if (!request || typeof request !== 'object') {
       return this.buildError(null, -32600, 'Invalid request.');
     }
@@ -54,13 +71,19 @@ export class McpController {
           })),
         });
       case 'tools/call':
-        return this.buildSuccess(request.id, await this.callTool(request.params ?? {}, user));
+        return this.buildSuccess(
+          request.id,
+          await this.callTool(request.params ?? {}, user),
+        );
       default:
         return this.buildError(request.id, -32601, 'Method not found.');
     }
   }
 
-  private async callTool(params: Record<string, unknown>, user: AuthenticatedUser) {
+  private async callTool(
+    params: Record<string, unknown>,
+    user: AuthenticatedUser,
+  ) {
     const name = typeof params.name === 'string' ? params.name : '';
     const tool = this.toolRegistry.get(name);
     if (!tool) {
@@ -68,18 +91,30 @@ export class McpController {
     }
 
     const argumentsPayload =
-      params.arguments && typeof params.arguments === 'object' && !Array.isArray(params.arguments)
+      params.arguments &&
+      typeof params.arguments === 'object' &&
+      !Array.isArray(params.arguments)
         ? (params.arguments as Record<string, unknown>)
         : {};
 
     try {
-      return this.buildToolResult(await tool.execute(argumentsPayload, { user }));
+      return this.buildToolResult(
+        await tool.execute(argumentsPayload, { user }),
+      );
     } catch (error) {
-      return this.buildToolResult(mcpToolError(error instanceof Error ? error.message : 'Tool call failed.'));
+      return this.buildToolResult(
+        mcpToolError(
+          error instanceof Error ? error.message : 'Tool call failed.',
+        ),
+      );
     }
   }
 
-  private buildToolResult(result: { isError?: boolean; structuredContent?: Record<string, unknown>; text: string }) {
+  private buildToolResult(result: {
+    isError?: boolean;
+    structuredContent?: Record<string, unknown>;
+    text: string;
+  }) {
     return {
       content: [
         {
@@ -92,7 +127,10 @@ export class McpController {
     };
   }
 
-  private buildSuccess(id: JsonRpcRequest['id'], result: Record<string, unknown>) {
+  private buildSuccess(
+    id: JsonRpcRequest['id'],
+    result: Record<string, unknown>,
+  ) {
     return {
       id: id ?? null,
       jsonrpc: '2.0',

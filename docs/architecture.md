@@ -12,7 +12,7 @@ src/modules/documents/
   documents.controller.ts
   documents.service.ts
   document-ingestion.service.ts
-  dto/
+  data-contracts/
   schemas/
 ```
 
@@ -23,7 +23,7 @@ repositories together.
 Cross-cutting code lives under `src/shared`:
 
 ```text
-src/shared/contracts
+src/shared/data-contracts
 src/shared/http
 src/shared/logging
 src/shared/models
@@ -38,8 +38,8 @@ Use these boundaries unless a feature has a clear reason to do otherwise:
 Controller -> Application Service -> Focused Services -> Repositories/Clients
 ```
 
-- Controllers own HTTP concerns only: route shape, guards, request DTOs, response
-  DTOs, status codes, and request/response wrapping.
+- Controllers own HTTP concerns only: route shape, guards, request/response
+  contracts, status codes, and request/response wrapping.
 - Controllers call application-facing services. They should not call
   repositories, clients, storage providers, or unrelated feature internals.
 - Services own business behavior and orchestration.
@@ -62,28 +62,73 @@ Recommended naming:
 | `Handler`    | Command or assistant-specific orchestration |
 | `Registry`   | Lookup table for named handlers/tools       |
 
+## Request State Safety
+
+Most Nest providers in this app use the default provider scope, which is
+singleton-like for the running application instance. This is normal for Nest and
+is safe only when services do not store mutable request-specific state.
+
+Do not store user, request, document selection, conversation, or correlation
+state on service instance fields:
+
+```ts
+// Avoid this.
+private currentUserId: string;
+```
+
+Pass request-specific values through method parameters instead:
+
+```ts
+listDocuments(user: AuthenticatedUser) {
+  return this.documentsRepository.findByOwner(user.subject);
+}
+```
+
+User isolation should flow through:
+
+```text
+CurrentUser decorator -> controller parameter -> service method parameter -> repository owner filter
+```
+
+Repositories must include the owner/user filter when reading or mutating
+user-owned data. This is the primary guard against cross-user data leaks or
+corruption.
+
+Request-scoped providers are available in Nest, but they are intentionally not
+the default here because they add overhead and can make the dependency graph
+harder to reason about. Prefer explicit request parameters unless a feature has a
+clear need for request-scoped dependency injection.
+
 ## Contracts
 
 The API intentionally uses command-style POST endpoints for app operations. The
 health check may use GET.
 
+Route names should be explicit command names because they drive generated client
+method names through OpenAPI operation IDs:
+
+```text
+POST /api/accounts/get-current-account -> getCurrentAccount
+POST /api/documents/delete-document -> deleteDocument
+```
+
 Each normal JSON endpoint should:
 
-1. Accept a request class extending `BaseRequestDto<TPayload>`.
-2. Return a response class extending `BaseResponseDto<TData>`.
+1. Accept a request class extending `BaseRequest<TPayload>`.
+2. Return a response class extending `BaseResponse<TData>`.
 3. Use `ResponseFactory.success(...)` or `ResponseFactory.failure(...)`.
 
 Example:
 
 ```text
-DeleteDocumentRequestDto extends BaseRequestDto<DeleteDocumentPayloadDto>
-DeleteDocumentResponseDto extends BaseResponseDto<DeleteDocumentResultDto>
+DeleteDocumentRequest extends BaseRequest<DeleteDocumentPayload>
+DeleteDocumentResponse extends BaseResponse<DeleteDocumentResult>
 ```
 
-The `Dto` suffix is a Nest convention because these classes also drive
-validation and OpenAPI generation. If a future team prefers `DeleteDocumentRequest`
-instead of `DeleteDocumentRequestDto`, that is a naming decision rather than an
-architecture change.
+This project intentionally uses `data-contracts` folders and role-based class
+names instead of the Nest-default `Dto` suffix. Use names such as `Request`,
+`Response`, `Payload`, `Result`, `Summary`, and `Info` so generated frontend API
+types read like normal application contracts.
 
 The base response shape is:
 
@@ -114,8 +159,9 @@ lastUpdatedDateUtc
 The public `id` is a generated GUID string. MongoDB still has its own internal
 `_id` unless a schema explicitly overrides it.
 
-Use schemas for Mongo/Mongoose persistence models. Use DTOs for API contracts.
-Avoid exposing raw persistence models directly from controllers.
+Use schemas for Mongo/Mongoose persistence models. Use data contracts for API
+requests and responses. Avoid exposing raw persistence models directly from
+controllers.
 
 ## Current Vertical Slices
 

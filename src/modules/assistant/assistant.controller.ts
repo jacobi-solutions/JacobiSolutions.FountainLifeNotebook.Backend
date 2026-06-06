@@ -1,18 +1,28 @@
-import { Body, Controller, HttpCode, HttpStatus, Logger, Param, Post, Res, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Param,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
-import { ResponseFactory } from '../../shared/contracts/response.factory';
+import { ResponseFactory } from '../../shared/data-contracts/response.factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { AssistantService } from './assistant.service';
-import { AssistantThreadUpdateResponseDto } from './dto/assistant-thread-update-response.dto';
-import { GetAssistantConversationRequestDto } from './dto/get-assistant-conversation.dto';
-import { GetAssistantConversationResponseDto } from './dto/get-assistant-conversation-response.dto';
-import { ListAssistantsRequestDto } from './dto/list-assistants.dto';
-import { ListAssistantsResponseDto } from './dto/list-assistants-response.dto';
-import { SendAssistantMessageDto } from './dto/send-assistant-message.dto';
+import { AssistantThreadUpdateResponse } from './data-contracts/assistant-thread-update-response';
+import { GetAssistantConversationRequest } from './data-contracts/get-assistant-conversation';
+import { GetAssistantConversationResponse } from './data-contracts/get-assistant-conversation-response';
+import { ListAssistantsRequest } from './data-contracts/list-assistants';
+import { ListAssistantsResponse } from './data-contracts/list-assistants-response';
+import { SendAssistantMessageRequest } from './data-contracts/send-assistant-message';
 
 @ApiBearerAuth()
 @ApiTags('assistants')
@@ -23,46 +33,56 @@ export class AssistantController {
 
   constructor(private readonly assistantService: AssistantService) {}
 
-  @Post('list')
+  @Post('list-assistants')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ type: ListAssistantsResponseDto })
+  @ApiOkResponse({ type: ListAssistantsResponse })
   listAssistants(
-    @Body() _request: ListAssistantsRequestDto,
+    @Body() _request: ListAssistantsRequest,
     @CorrelationId() correlationId?: string,
   ) {
-    return ResponseFactory.success(this.assistantService.listAssistants(), correlationId);
+    return ResponseFactory.success(
+      this.assistantService.listAssistants(),
+      correlationId,
+    );
   }
 
-  @Post('conversation/get')
+  @Post('get-conversation')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ type: GetAssistantConversationResponseDto })
+  @ApiOkResponse({ type: GetAssistantConversationResponse })
   async getConversation(
-    @Body() request: GetAssistantConversationRequestDto,
+    @Body() request: GetAssistantConversationRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
     if (!request.payload) {
       return ResponseFactory.failure(
-        { errorCode: 'VALIDATION_ERROR', errorMessage: 'Request payload is required.' },
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Request payload is required.',
+        },
         correlationId,
       );
     }
 
     return ResponseFactory.success(
-      await this.assistantService.getConversation(request.payload.conversationId, user),
+      await this.assistantService.getConversation(
+        request.payload.conversationId,
+        user,
+      ),
       correlationId,
     );
   }
 
-  @Post(':assistantKey/messages/stream')
+  @Post(':assistantKey/stream-message')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({
-    description: 'Server-sent event stream. Each data event is an AssistantThreadUpdateResponseDto.',
-    type: AssistantThreadUpdateResponseDto,
+    description:
+      'Server-sent event stream. Each data event is an AssistantThreadUpdateResponse.',
+    type: AssistantThreadUpdateResponse,
   })
-  async streamMessage(
+  async streamAssistantMessage(
     @Param('assistantKey') assistantKey: string,
-    @Body() request: SendAssistantMessageDto,
+    @Body() request: SendAssistantMessageRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId: string | undefined,
     @Res() response: Response,
@@ -75,7 +95,10 @@ export class AssistantController {
       response.write(
         `data: ${JSON.stringify(
           ResponseFactory.failure(
-            { errorCode: 'VALIDATION_ERROR', errorMessage: 'Request payload is required.' },
+            {
+              errorCode: 'VALIDATION_ERROR',
+              errorMessage: 'Request payload is required.',
+            },
             correlationId,
           ),
         )}\n\n`,
@@ -85,8 +108,14 @@ export class AssistantController {
     }
 
     try {
-      for await (const update of this.assistantService.streamMessage(assistantKey, request.payload, user)) {
-        response.write(`data: ${JSON.stringify(ResponseFactory.success(update, correlationId))}\n\n`);
+      for await (const update of this.assistantService.streamMessage(
+        assistantKey,
+        request.payload,
+        user,
+      )) {
+        response.write(
+          `data: ${JSON.stringify(ResponseFactory.success(update, correlationId))}\n\n`,
+        );
       }
     } catch (error) {
       this.logger.error({
@@ -104,7 +133,9 @@ export class AssistantController {
               {
                 errorCode: 'ASSISTANT_STREAM_ERROR',
                 errorMessage:
-                  error instanceof Error ? error.message : 'The assistant stream failed unexpectedly.',
+                  error instanceof Error
+                    ? error.message
+                    : 'The assistant stream failed unexpectedly.',
               },
               correlationId,
             ),

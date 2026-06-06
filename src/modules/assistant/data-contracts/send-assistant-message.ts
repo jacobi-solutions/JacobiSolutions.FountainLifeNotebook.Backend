@@ -1,9 +1,9 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsArray, IsNotEmpty, IsOptional, IsString, ValidateNested } from 'class-validator';
-import { BaseRequestDto } from '../../../shared/contracts/base-request.dto';
+import { BaseRequest } from '../../../shared/data-contracts/base-request';
 
-export class SendAssistantMessagePayloadDto {
+export class SendAssistantMessagePayload {
   @ApiProperty()
   @IsString()
   @IsNotEmpty()
@@ -27,10 +27,10 @@ export class SendAssistantMessagePayloadDto {
   participantUserIds?: string[];
 }
 
-export class SendAssistantMessageDto extends BaseRequestDto<SendAssistantMessagePayloadDto> {
-  @ApiProperty({ type: SendAssistantMessagePayloadDto })
+export class SendAssistantMessageRequest extends BaseRequest<SendAssistantMessagePayload> {
+  @ApiProperty({ type: SendAssistantMessagePayload })
   @IsOptional()
-  @Type(() => SendAssistantMessagePayloadDto)
+  @Type(() => SendAssistantMessagePayload)
   @ValidateNested()
-  declare payload?: SendAssistantMessagePayloadDto;
+  declare payload?: SendAssistantMessagePayload;
 }

@@ -1,15 +1,15 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { CitationDto } from './citation.dto';
+import { Citation } from './citation';
 
-export class AssistantConversationMessageDto {
+export class AssistantConversationMessage {
   @ApiProperty({ required: false })
   actorDisplayName?: string;
 
   @ApiProperty({ required: false })
   actorUserId?: string;
 
-  @ApiProperty({ required: false, type: [CitationDto] })
-  citations?: CitationDto[];
+  @ApiProperty({ required: false, type: [Citation] })
+  citations?: Citation[];
 
   @ApiProperty()
   createdDateUtc!: Date;

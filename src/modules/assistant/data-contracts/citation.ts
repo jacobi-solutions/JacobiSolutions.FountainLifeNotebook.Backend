@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class CitationDto {
+export class Citation {
   @ApiProperty()
   chunkIndex!: number;
 

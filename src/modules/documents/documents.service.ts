@@ -3,7 +3,7 @@ import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentIngestionService } from './document-ingestion.service';
 import { DocumentStorageService } from './document-storage.service';
-import { DocumentDto } from './dto/document.dto';
+import { DocumentSummary } from './data-contracts/document-summary';
 import { DocumentsRepository } from './documents.repository';
 import {
   DocumentRecord,
@@ -22,15 +22,15 @@ export class DocumentsService {
   async uploadDocument(
     file: Express.Multer.File | undefined,
     user: AuthenticatedUser,
-  ): Promise<DocumentDto> {
-    return this.toDto(
+  ): Promise<DocumentSummary> {
+    return this.toSummary(
       await this.documentIngestionService.uploadDocument(file, user),
     );
   }
 
-  async listDocuments(user: AuthenticatedUser): Promise<DocumentDto[]> {
+  async listDocuments(user: AuthenticatedUser): Promise<DocumentSummary[]> {
     return (await this.documentsRepository.findByOwner(user.subject)).map(
-      (document) => this.toDto(document),
+      (document) => this.toSummary(document),
     );
   }
 
@@ -56,7 +56,7 @@ export class DocumentsService {
     return { deleted };
   }
 
-  toDto(document: DocumentRecord | DocumentRecordDocument): DocumentDto {
+  toSummary(document: DocumentRecord | DocumentRecordDocument): DocumentSummary {
     return {
       byteSize: document.byteSize,
       chunkCount: document.chunkCount,

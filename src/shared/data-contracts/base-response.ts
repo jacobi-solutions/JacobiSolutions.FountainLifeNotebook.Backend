@@ -1,12 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { ErrorDto } from './error.dto';
+import { ErrorInfo } from './error-info';
 
-export class BaseResponseDto<TData = unknown> {
+export class BaseResponse<TData = unknown> {
   @ApiProperty({ required: false })
   correlationId?: string;
 
-  @ApiProperty({ type: [ErrorDto] })
-  errors: ErrorDto[] = [];
+  @ApiProperty({ type: [ErrorInfo] })
+  errors: ErrorInfo[] = [];
 
   @ApiProperty({ type: Boolean })
   isSuccess = true;

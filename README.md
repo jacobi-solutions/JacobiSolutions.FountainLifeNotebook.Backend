@@ -4,7 +4,7 @@ NestJS API for the Fountain Life interview NotebookLM-style app.
 
 ## Stack Shape
 
-- HTTP layer: NestJS controllers with Swagger-decorated DTOs and a global `/api` prefix.
+- HTTP layer: NestJS controllers with Swagger-decorated data contracts and a global `/api` prefix.
 - Runtime modes: local interview mode by default; production requires Cognito auth, S3 document storage, and OpenAI.
 - Auth: local interview mode by default, Cognito JWT mode available with `AUTH_MODE=cognito`.
 - Services: controller orchestration stays thin; business behavior lives in module services.
@@ -152,6 +152,20 @@ Then regenerate the frontend client from `/Users/shanedrye/jacobi/Ramin/fountain
 
 ```bash
 npm run contract:generate
+```
+
+For convenience, either sibling repo can run the full export-and-generate flow:
+
+```bash
+npm run contract:sync
+```
+
+This assumes the repos are checked out as siblings:
+
+```text
+Ramin/
+  FountainLifeNotebook.Backend/
+  fountain-life-notebook.frontend/
 ```
 
 ## Checks

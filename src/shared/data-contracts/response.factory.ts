@@ -1,8 +1,8 @@
-import { BaseResponseDto } from './base-response.dto';
-import { ErrorDto } from './error.dto';
+import { BaseResponse } from './base-response';
+import { ErrorInfo } from './error-info';
 
 export class ResponseFactory {
-  static success<TData>(data: TData, correlationId?: string): BaseResponseDto<TData> {
+  static success<TData>(data: TData, correlationId?: string): BaseResponse<TData> {
     return {
       correlationId,
       data,
@@ -12,9 +12,9 @@ export class ResponseFactory {
   }
 
   static failure<TData = never>(
-    errors: ErrorDto | ErrorDto[],
+    errors: ErrorInfo | ErrorInfo[],
     correlationId?: string,
-  ): BaseResponseDto<TData> {
+  ): BaseResponse<TData> {
     return {
       correlationId,
       errors: Array.isArray(errors) ? errors : [errors],
@@ -41,13 +41,13 @@ export class ResponseFactory {
     return response;
   }
 
-  static isBaseResponse(value: unknown): value is BaseResponseDto {
+  static isBaseResponse(value: unknown): value is BaseResponse {
     return (
       typeof value === 'object' &&
       value !== null &&
       'isSuccess' in value &&
       'errors' in value &&
-      Array.isArray((value as BaseResponseDto).errors)
+      Array.isArray((value as BaseResponse).errors)
     );
   }
 }

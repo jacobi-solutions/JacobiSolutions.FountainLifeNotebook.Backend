@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AssistantConversationParticipantDto {
+export class AssistantConversationParticipant {
   @ApiProperty({ required: false })
   displayName?: string;
 

@@ -16,18 +16,18 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ResponseFactory } from '../../shared/contracts/response.factory';
+import { ResponseFactory } from '../../shared/data-contracts/response.factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { MAX_DOCUMENT_UPLOAD_BYTES } from './document.constants';
 import { DocumentsService } from './documents.service';
-import { DeleteDocumentRequestDto } from './dto/delete-document.dto';
-import { DeleteDocumentResponseDto } from './dto/delete-document-response.dto';
-import { ListDocumentsRequestDto } from './dto/list-documents.dto';
-import { ListDocumentsResponseDto } from './dto/list-documents-response.dto';
-import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
+import { DeleteDocumentRequest } from './data-contracts/delete-document';
+import { DeleteDocumentResponse } from './data-contracts/delete-document-response';
+import { ListDocumentsRequest } from './data-contracts/list-documents';
+import { ListDocumentsResponse } from './data-contracts/list-documents-response';
+import { UploadDocumentResponse } from './data-contracts/upload-document-response';
 
 @ApiBearerAuth()
 @ApiTags('documents')
@@ -36,7 +36,7 @@ import { UploadDocumentResponseDto } from './dto/upload-document-response.dto';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post('upload')
+  @Post('upload-document')
   @HttpCode(HttpStatus.OK)
   @UseInterceptors(
     FileInterceptor('file', {
@@ -56,7 +56,7 @@ export class DocumentsController {
       type: 'object',
     },
   })
-  @ApiOkResponse({ type: UploadDocumentResponseDto })
+  @ApiOkResponse({ type: UploadDocumentResponse })
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File | undefined,
     @CurrentUser() user: AuthenticatedUser,
@@ -68,11 +68,11 @@ export class DocumentsController {
     );
   }
 
-  @Post('list')
+  @Post('list-documents')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ type: ListDocumentsResponseDto })
+  @ApiOkResponse({ type: ListDocumentsResponse })
   async listDocuments(
-    @Body() _request: ListDocumentsRequestDto,
+    @Body() _request: ListDocumentsRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
@@ -82,11 +82,11 @@ export class DocumentsController {
     );
   }
 
-  @Post('delete')
+  @Post('delete-document')
   @HttpCode(HttpStatus.OK)
-  @ApiOkResponse({ type: DeleteDocumentResponseDto })
+  @ApiOkResponse({ type: DeleteDocumentResponse })
   async deleteDocument(
-    @Body() request: DeleteDocumentRequestDto,
+    @Body() request: DeleteDocumentRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {

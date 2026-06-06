@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
-import { AccountResponseDto } from './dto/account-response.dto';
+import { AccountSummary } from './data-contracts/account-summary';
 import { AccountsRepository } from './accounts.repository';
 import { AccountDocument } from './schemas/account.schema';
 
@@ -12,17 +12,17 @@ export class AccountsService {
     return user;
   }
 
-  async registerCurrentUser(user: AuthenticatedUser): Promise<AccountResponseDto> {
+  async registerCurrentUser(user: AuthenticatedUser): Promise<AccountSummary> {
     const account = await this.accountsRepository.upsertAccount({
       cognitoSubject: user.subject,
       email: user.email ?? `${user.subject}@unknown.local`,
       username: user.username,
     });
 
-    return this.toDto(account);
+    return this.toSummary(account);
   }
 
-  private toDto(account: AccountDocument): AccountResponseDto {
+  private toSummary(account: AccountDocument): AccountSummary {
     return {
       id: account.id,
       cognitoSubject: account.cognitoSubject,

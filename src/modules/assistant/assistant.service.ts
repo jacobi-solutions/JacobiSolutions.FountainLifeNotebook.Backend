@@ -13,11 +13,11 @@ import {
 } from './assistant.constants';
 import { AssistantSummary } from './assistant-handler';
 import { AssistantRegistry } from './assistant-registry';
-import { AssistantConversationDto } from './dto/assistant-conversation.dto';
-import { AssistantConversationMessageDto } from './dto/assistant-conversation-message.dto';
-import { AssistantConversationParticipantDto } from './dto/assistant-conversation-participant.dto';
-import { CitationDto } from './dto/citation.dto';
-import type { SendAssistantMessagePayloadDto } from './dto/send-assistant-message.dto';
+import { AssistantConversation as AssistantConversationContract } from './data-contracts/assistant-conversation';
+import { AssistantConversationMessage } from './data-contracts/assistant-conversation-message';
+import { AssistantConversationParticipant as AssistantConversationParticipantContract } from './data-contracts/assistant-conversation-participant';
+import { Citation } from './data-contracts/citation';
+import type { SendAssistantMessagePayload } from './data-contracts/send-assistant-message';
 import {
   AssistantConversation,
   AssistantConversationDocument,
@@ -26,7 +26,7 @@ import {
 } from './schemas/assistant-conversation.schema';
 
 export interface AssistantThreadUpdate {
-  citations?: CitationDto[];
+  citations?: Citation[];
   conversationId: string;
   messageId?: string;
   role: 'assistant' | 'system' | 'user';
@@ -47,7 +47,7 @@ export class AssistantService {
 
   async *streamMessage(
     assistantKey: string,
-    request: SendAssistantMessagePayloadDto,
+    request: SendAssistantMessagePayload,
     user: AuthenticatedUser,
   ): AsyncGenerator<AssistantThreadUpdate> {
     const handler = this.assistantRegistry.getOrThrow(assistantKey);
@@ -105,7 +105,7 @@ export class AssistantService {
   async getConversation(
     conversationId: string,
     user: AuthenticatedUser,
-  ): Promise<AssistantConversationDto> {
+  ): Promise<AssistantConversationContract> {
     const conversation =
       await this.conversationsRepository.findByIdForParticipant(
         conversationId,
@@ -115,12 +115,12 @@ export class AssistantService {
       throw new NotFoundException('Conversation was not found.');
     }
 
-    return this.toDto(conversation);
+    return this.toConversation(conversation);
   }
 
   private async loadOrCreateConversation(
     assistantKey: string,
-    request: SendAssistantMessagePayloadDto,
+    request: SendAssistantMessagePayload,
     user: AuthenticatedUser,
   ) {
     if (request.conversationId) {
@@ -206,7 +206,7 @@ export class AssistantService {
   private createAssistantMessage(
     turnId: string,
     text: string,
-    citations: CitationDto[],
+    citations: Citation[],
   ): AssistantConversationItem {
     return {
       actorDisplayName: NOTEBOOK_ASSISTANT_DISPLAY_NAME,
@@ -221,9 +221,9 @@ export class AssistantService {
     };
   }
 
-  private toDto(
+  private toConversation(
     conversation: AssistantConversationDocument,
-  ): AssistantConversationDto {
+  ): AssistantConversationContract {
     return {
       assistantKey: conversation.assistantKey,
       createdDateUtc: conversation.createdDateUtc,
@@ -232,7 +232,7 @@ export class AssistantService {
       messages: conversation.items
         .filter((item) => item.visibility === 'user')
         .map(
-          (item): AssistantConversationMessageDto => ({
+          (item): AssistantConversationMessage => ({
             actorDisplayName: item.actorDisplayName,
             actorUserId: item.actorUserId,
             citations: this.getMessageCitations(item.structuredPayload),
@@ -243,7 +243,7 @@ export class AssistantService {
           }),
         ),
       participants: conversation.participants.map(
-        (participant): AssistantConversationParticipantDto => ({
+        (participant): AssistantConversationParticipantContract => ({
           displayName: participant.displayName,
           joinedDateUtc: participant.joinedDateUtc,
           role: participant.role,
@@ -261,7 +261,7 @@ export class AssistantService {
     }
 
     const normalized = citations.filter(isCitation).map(
-      (citation): CitationDto => ({
+      (citation): Citation => ({
         chunkIndex: citation.chunkIndex,
         documentId: citation.documentId,
         documentName: citation.documentName,
@@ -273,7 +273,7 @@ export class AssistantService {
   }
 }
 
-function isCitation(value: unknown): value is CitationDto {
+function isCitation(value: unknown): value is Citation {
   return (
     typeof value === 'object' &&
     value !== null &&

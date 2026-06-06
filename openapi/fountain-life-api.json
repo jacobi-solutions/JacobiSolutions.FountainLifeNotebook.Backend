@@ -1,16 +1,16 @@
 {
   "openapi": "3.0.0",
   "paths": {
-    "/accounts/me": {
+    "/accounts/get-current-account": {
       "post": {
-        "operationId": "AccountsController_getMe",
+        "operationId": "getCurrentAccount",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BaseRequestDto"
+                "$ref": "#/components/schemas/BaseRequest"
               }
             }
           }
@@ -21,7 +21,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CurrentUserResponseDto"
+                  "$ref": "#/components/schemas/CurrentUserResponse"
                 }
               }
             }
@@ -37,16 +37,16 @@
         ]
       }
     },
-    "/accounts/register": {
+    "/accounts/register-current-account": {
       "post": {
-        "operationId": "AccountsController_register",
+        "operationId": "registerCurrentAccount",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/BaseRequestDto"
+                "$ref": "#/components/schemas/BaseRequest"
               }
             }
           }
@@ -57,7 +57,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/RegisterAccountResponseDto"
+                  "$ref": "#/components/schemas/RegisterAccountResponse"
                 }
               }
             }
@@ -73,16 +73,16 @@
         ]
       }
     },
-    "/assistants/list": {
+    "/assistants/list-assistants": {
       "post": {
-        "operationId": "AssistantController_listAssistants",
+        "operationId": "listAssistants",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ListAssistantsRequestDto"
+                "$ref": "#/components/schemas/ListAssistantsRequest"
               }
             }
           }
@@ -93,7 +93,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListAssistantsResponseDto"
+                  "$ref": "#/components/schemas/ListAssistantsResponse"
                 }
               }
             }
@@ -109,16 +109,16 @@
         ]
       }
     },
-    "/assistants/conversation/get": {
+    "/assistants/get-conversation": {
       "post": {
-        "operationId": "AssistantController_getConversation",
+        "operationId": "getConversation",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/GetAssistantConversationRequestDto"
+                "$ref": "#/components/schemas/GetAssistantConversationRequest"
               }
             }
           }
@@ -129,7 +129,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GetAssistantConversationResponseDto"
+                  "$ref": "#/components/schemas/GetAssistantConversationResponse"
                 }
               }
             }
@@ -145,9 +145,9 @@
         ]
       }
     },
-    "/assistants/{assistantKey}/messages/stream": {
+    "/assistants/{assistantKey}/stream-message": {
       "post": {
-        "operationId": "AssistantController_streamMessage",
+        "operationId": "streamAssistantMessage",
         "parameters": [
           {
             "name": "assistantKey",
@@ -163,18 +163,18 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SendAssistantMessageDto"
+                "$ref": "#/components/schemas/SendAssistantMessageRequest"
               }
             }
           }
         },
         "responses": {
           "200": {
-            "description": "Server-sent event stream. Each data event is an AssistantThreadUpdateResponseDto.",
+            "description": "Server-sent event stream. Each data event is an AssistantThreadUpdateResponse.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/AssistantThreadUpdateResponseDto"
+                  "$ref": "#/components/schemas/AssistantThreadUpdateResponse"
                 }
               }
             }
@@ -190,9 +190,9 @@
         ]
       }
     },
-    "/documents/upload": {
+    "/documents/upload-document": {
       "post": {
-        "operationId": "DocumentsController_uploadDocument",
+        "operationId": "uploadDocument",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -219,7 +219,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UploadDocumentResponseDto"
+                  "$ref": "#/components/schemas/UploadDocumentResponse"
                 }
               }
             }
@@ -235,16 +235,16 @@
         ]
       }
     },
-    "/documents/list": {
+    "/documents/list-documents": {
       "post": {
-        "operationId": "DocumentsController_listDocuments",
+        "operationId": "listDocuments",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ListDocumentsRequestDto"
+                "$ref": "#/components/schemas/ListDocumentsRequest"
               }
             }
           }
@@ -255,7 +255,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ListDocumentsResponseDto"
+                  "$ref": "#/components/schemas/ListDocumentsResponse"
                 }
               }
             }
@@ -271,16 +271,16 @@
         ]
       }
     },
-    "/documents/delete": {
+    "/documents/delete-document": {
       "post": {
-        "operationId": "DocumentsController_deleteDocument",
+        "operationId": "deleteDocument",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DeleteDocumentRequestDto"
+                "$ref": "#/components/schemas/DeleteDocumentRequest"
               }
             }
           }
@@ -291,7 +291,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DeleteDocumentResponseDto"
+                  "$ref": "#/components/schemas/DeleteDocumentResponse"
                 }
               }
             }
@@ -309,7 +309,7 @@
     },
     "/health": {
       "get": {
-        "operationId": "HealthController_getHealth",
+        "operationId": "getHealth",
         "parameters": [],
         "responses": {
           "200": {
@@ -323,7 +323,7 @@
     },
     "/mcp": {
       "post": {
-        "operationId": "McpController_post",
+        "operationId": "handleMcpRequest",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -368,7 +368,7 @@
       }
     },
     "schemas": {
-      "BaseRequestDto": {
+      "BaseRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -379,7 +379,7 @@
           }
         }
       },
-      "ErrorDto": {
+      "ErrorInfo": {
         "type": "object",
         "properties": {
           "errorMessage": {
@@ -393,7 +393,7 @@
           "errorMessage"
         ]
       },
-      "AuthenticatedUserDto": {
+      "AuthenticatedUserInfo": {
         "type": "object",
         "properties": {
           "email": {
@@ -413,7 +413,7 @@
           "username"
         ]
       },
-      "CurrentUserResponseDto": {
+      "CurrentUserResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -422,14 +422,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/AuthenticatedUserDto"
+            "$ref": "#/components/schemas/AuthenticatedUserInfo"
           }
         },
         "required": [
@@ -437,7 +437,7 @@
           "isSuccess"
         ]
       },
-      "AccountResponseDto": {
+      "AccountSummary": {
         "type": "object",
         "properties": {
           "id": {
@@ -460,7 +460,7 @@
           "username"
         ]
       },
-      "RegisterAccountResponseDto": {
+      "RegisterAccountResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -469,14 +469,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/AccountResponseDto"
+            "$ref": "#/components/schemas/AccountSummary"
           }
         },
         "required": [
@@ -484,7 +484,7 @@
           "isSuccess"
         ]
       },
-      "ListAssistantsRequestDto": {
+      "ListAssistantsRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -495,7 +495,7 @@
           }
         }
       },
-      "AssistantSummaryDto": {
+      "AssistantSummary": {
         "type": "object",
         "properties": {
           "description": {
@@ -514,7 +514,7 @@
           "name"
         ]
       },
-      "ListAssistantsResponseDto": {
+      "ListAssistantsResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -523,7 +523,7 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
@@ -532,7 +532,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantSummaryDto"
+              "$ref": "#/components/schemas/AssistantSummary"
             }
           }
         },
@@ -541,7 +541,7 @@
           "isSuccess"
         ]
       },
-      "GetAssistantConversationPayloadDto": {
+      "GetAssistantConversationPayload": {
         "type": "object",
         "properties": {
           "conversationId": {
@@ -552,18 +552,18 @@
           "conversationId"
         ]
       },
-      "GetAssistantConversationRequestDto": {
+      "GetAssistantConversationRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
             "type": "string"
           },
           "payload": {
-            "$ref": "#/components/schemas/GetAssistantConversationPayloadDto"
+            "$ref": "#/components/schemas/GetAssistantConversationPayload"
           }
         }
       },
-      "CitationDto": {
+      "Citation": {
         "type": "object",
         "properties": {
           "chunkIndex": {
@@ -586,7 +586,7 @@
           "snippet"
         ]
       },
-      "AssistantConversationMessageDto": {
+      "AssistantConversationMessage": {
         "type": "object",
         "properties": {
           "actorDisplayName": {
@@ -598,7 +598,7 @@
           "citations": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CitationDto"
+              "$ref": "#/components/schemas/Citation"
             }
           },
           "createdDateUtc": {
@@ -628,7 +628,7 @@
           "text"
         ]
       },
-      "AssistantConversationParticipantDto": {
+      "AssistantConversationParticipant": {
         "type": "object",
         "properties": {
           "displayName": {
@@ -663,7 +663,7 @@
           "userId"
         ]
       },
-      "AssistantConversationDto": {
+      "AssistantConversation": {
         "type": "object",
         "properties": {
           "assistantKey": {
@@ -679,13 +679,13 @@
           "messages": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantConversationMessageDto"
+              "$ref": "#/components/schemas/AssistantConversationMessage"
             }
           },
           "participants": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AssistantConversationParticipantDto"
+              "$ref": "#/components/schemas/AssistantConversationParticipant"
             }
           },
           "lastUpdatedDateUtc": {
@@ -702,7 +702,7 @@
           "lastUpdatedDateUtc"
         ]
       },
-      "GetAssistantConversationResponseDto": {
+      "GetAssistantConversationResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -711,14 +711,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/AssistantConversationDto"
+            "$ref": "#/components/schemas/AssistantConversation"
           }
         },
         "required": [
@@ -726,7 +726,7 @@
           "isSuccess"
         ]
       },
-      "SendAssistantMessagePayloadDto": {
+      "SendAssistantMessagePayload": {
         "type": "object",
         "properties": {
           "message": {
@@ -752,24 +752,24 @@
           "message"
         ]
       },
-      "SendAssistantMessageDto": {
+      "SendAssistantMessageRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
             "type": "string"
           },
           "payload": {
-            "$ref": "#/components/schemas/SendAssistantMessagePayloadDto"
+            "$ref": "#/components/schemas/SendAssistantMessagePayload"
           }
         }
       },
-      "AssistantThreadUpdateDto": {
+      "AssistantThreadUpdate": {
         "type": "object",
         "properties": {
           "citations": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/CitationDto"
+              "$ref": "#/components/schemas/Citation"
             }
           },
           "conversationId": {
@@ -804,7 +804,7 @@
           "type"
         ]
       },
-      "AssistantThreadUpdateResponseDto": {
+      "AssistantThreadUpdateResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -813,14 +813,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/AssistantThreadUpdateDto"
+            "$ref": "#/components/schemas/AssistantThreadUpdate"
           }
         },
         "required": [
@@ -828,7 +828,7 @@
           "isSuccess"
         ]
       },
-      "DocumentDto": {
+      "DocumentSummary": {
         "type": "object",
         "properties": {
           "byteSize": {
@@ -876,7 +876,7 @@
           "status"
         ]
       },
-      "UploadDocumentResponseDto": {
+      "UploadDocumentResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -885,14 +885,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/DocumentDto"
+            "$ref": "#/components/schemas/DocumentSummary"
           }
         },
         "required": [
@@ -900,7 +900,7 @@
           "isSuccess"
         ]
       },
-      "ListDocumentsRequestDto": {
+      "ListDocumentsRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -911,7 +911,7 @@
           }
         }
       },
-      "ListDocumentsResponseDto": {
+      "ListDocumentsResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -920,7 +920,7 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
@@ -929,7 +929,7 @@
           "data": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/DocumentDto"
+              "$ref": "#/components/schemas/DocumentSummary"
             }
           }
         },
@@ -938,7 +938,7 @@
           "isSuccess"
         ]
       },
-      "DeleteDocumentPayloadDto": {
+      "DeleteDocumentPayload": {
         "type": "object",
         "properties": {
           "documentId": {
@@ -949,18 +949,18 @@
           "documentId"
         ]
       },
-      "DeleteDocumentRequestDto": {
+      "DeleteDocumentRequest": {
         "type": "object",
         "properties": {
           "correlationId": {
             "type": "string"
           },
           "payload": {
-            "$ref": "#/components/schemas/DeleteDocumentPayloadDto"
+            "$ref": "#/components/schemas/DeleteDocumentPayload"
           }
         }
       },
-      "DeleteDocumentResultDto": {
+      "DeleteDocumentResult": {
         "type": "object",
         "properties": {
           "deleted": {
@@ -971,7 +971,7 @@
           "deleted"
         ]
       },
-      "DeleteDocumentResponseDto": {
+      "DeleteDocumentResponse": {
         "type": "object",
         "properties": {
           "correlationId": {
@@ -980,14 +980,14 @@
           "errors": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ErrorDto"
+              "$ref": "#/components/schemas/ErrorInfo"
             }
           },
           "isSuccess": {
             "type": "boolean"
           },
           "data": {
-            "$ref": "#/components/schemas/DeleteDocumentResultDto"
+            "$ref": "#/components/schemas/DeleteDocumentResult"
           }
         },
         "required": [

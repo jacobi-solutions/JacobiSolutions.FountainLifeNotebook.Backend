@@ -15,7 +15,7 @@ describe('McpController', () => {
     const controller = new McpController(registry);
 
     await expect(
-      controller.post(
+      controller.handleMcpRequest(
         {
           id: 'request-1',
           jsonrpc: '2.0',
@@ -51,7 +51,7 @@ describe('McpController', () => {
     const controller = new McpController(registry);
 
     await expect(
-      controller.post(
+      controller.handleMcpRequest(
         {
           id: 2,
           jsonrpc: '2.0',

@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { DOCUMENT_PROCESSING_STATUSES } from '../document.constants';
 import type { DocumentProcessingStatus } from '../document.constants';
 
-export class DocumentDto {
+export class DocumentSummary {
   @ApiProperty()
   byteSize!: number;
 

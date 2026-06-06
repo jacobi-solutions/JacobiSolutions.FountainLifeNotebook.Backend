@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { CitationDto } from './dto/citation.dto';
+import { Citation } from './data-contracts/citation';
 import { LlmProviderService } from './llm-provider.service';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
 
 export interface NotebookAgentAnswer {
   answer: string;
-  citations: CitationDto[];
+  citations: Citation[];
 }
 
 @Injectable()

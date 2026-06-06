@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Allow, IsOptional, IsString } from 'class-validator';
 
-export class BaseRequestDto<TPayload = unknown> {
+export class BaseRequest<TPayload = unknown> {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

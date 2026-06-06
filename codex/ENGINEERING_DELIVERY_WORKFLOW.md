@@ -1,6 +1,7 @@
 # Engineering Delivery Workflow (Fountain Life Notebook Backend)
 
 Central policy:
+
 - Read `/Users/shanedrye/jacobi/codex/ENGINEERING_DELIVERY_WORKFLOW.md` first.
 - This file is a Fountain Life Notebook backend overlay for repo-specific commands and risks.
 - If this file conflicts with the central workflow, the central workflow wins unless the user explicitly overrides it.
@@ -22,9 +23,11 @@ Before backend implementation work, read:
 ## Repo Scope
 
 Repository root:
+
 - `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend`
 
 Key areas:
+
 - `src/modules/auth` for local interview auth and optional Cognito JWT validation
 - `src/modules/accounts` for Mongo-backed account registration
 - `src/modules/assistant` for assistant-facing APIs and streaming
@@ -47,6 +50,12 @@ Run from this repo root:
 ## Contract Rule
 
 If an API request or response changes:
-- update Swagger-decorated DTOs
+
+- update Swagger-decorated data contracts
 - update frontend client/service usage intentionally
 - run the backend build and the affected frontend typecheck/build
+
+Developer convenience:
+
+- `npm run contract:sync` is available in both sibling repos and runs backend export plus frontend generation.
+- `contract:sync` assumes `FountainLifeNotebook.Backend` and `fountain-life-notebook.frontend` are checked out as sibling folders.

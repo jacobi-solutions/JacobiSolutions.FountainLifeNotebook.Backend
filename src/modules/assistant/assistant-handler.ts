@@ -1,4 +1,4 @@
-import { CitationDto } from './dto/citation.dto';
+import { Citation } from './data-contracts/citation';
 
 export interface AssistantSummary {
   description: string;
@@ -8,7 +8,7 @@ export interface AssistantSummary {
 
 export interface AssistantAnswer {
   answer: string;
-  citations: CitationDto[];
+  citations: Citation[];
 }
 
 export interface AssistantQuestionRequest {

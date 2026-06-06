@@ -1,6 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 
-export class AuthenticatedUserDto {
+export class AuthenticatedUserInfo {
   @ApiProperty({ nullable: true, type: String })
   email!: string | null;
 

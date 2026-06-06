@@ -7,7 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
-import { ResponseFactory } from '../contracts/response.factory';
+import { ResponseFactory } from '../data-contracts/response.factory';
 import type { RequestWithCorrelationId } from './request-with-correlation-id';
 
 @Catch()

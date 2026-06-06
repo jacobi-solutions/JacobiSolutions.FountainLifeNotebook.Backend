@@ -95,7 +95,7 @@ describe('Fountain Life Notebook API e2e', () => {
 
   it('accepts a nested base-request payload for POST endpoints', async () => {
     const response = await request(app.getHttpServer())
-      .post('/api/assistants/conversation/get')
+      .post('/api/assistants/get-conversation')
       .send({ payload: { conversationId: 'conversation-1' } })
       .expect(200);
 
@@ -117,7 +117,7 @@ describe('Fountain Life Notebook API e2e', () => {
 
   it('rejects invalid nested payloads before controller execution', async () => {
     const response = await request(app.getHttpServer())
-      .post('/api/assistants/conversation/get')
+      .post('/api/assistants/get-conversation')
       .send({ payload: {} })
       .expect(400);
 
@@ -136,7 +136,7 @@ describe('Fountain Life Notebook API e2e', () => {
     });
 
     const response = await request(app.getHttpServer())
-      .post('/api/assistants/notebook/messages/stream')
+      .post('/api/assistants/notebook/stream-message')
       .send({ payload: { message: 'hello' } })
       .expect(200);
 

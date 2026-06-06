@@ -1,18 +1,9 @@
 import type { ExecutionContext } from '@nestjs/common';
+import type { ConfigService } from '@nestjs/config';
 import { AuthenticatedUserGuard } from './authenticated-user.guard';
 
 describe('AuthenticatedUserGuard', () => {
-  const originalEnvironment = process.env;
-
-  afterEach(() => {
-    process.env = originalEnvironment;
-  });
-
   it('attaches a local user when AUTH_MODE is local', () => {
-    process.env = {
-      ...originalEnvironment,
-      AUTH_MODE: 'local',
-    };
     const request = {
       headers: {
         'x-local-user-email': 'interviewer@example.com',
@@ -20,7 +11,7 @@ describe('AuthenticatedUserGuard', () => {
         'x-local-username': 'Interviewer',
       },
     };
-    const guard = new AuthenticatedUserGuard();
+    const guard = new AuthenticatedUserGuard(createConfigService());
 
     expect(guard.canActivate(createContext(request))).toBe(true);
     expect(request).toEqual(
@@ -35,15 +26,14 @@ describe('AuthenticatedUserGuard', () => {
   });
 
   it('uses deterministic local defaults when headers are absent', () => {
-    process.env = {
-      ...originalEnvironment,
-      AUTH_MODE: 'local',
-      LOCAL_AUTH_EMAIL: 'local@example.com',
-      LOCAL_AUTH_USER_ID: 'local-1',
-      LOCAL_AUTH_USERNAME: 'Local Reviewer',
-    };
     const request = { headers: {} };
-    const guard = new AuthenticatedUserGuard();
+    const guard = new AuthenticatedUserGuard(createConfigService({
+      localUser: {
+        email: 'local@example.com',
+        subject: 'local-1',
+        username: 'Local Reviewer',
+      },
+    }));
 
     expect(guard.canActivate(createContext(request))).toBe(true);
     expect(request).toEqual(
@@ -57,6 +47,23 @@ describe('AuthenticatedUserGuard', () => {
     );
   });
 });
+
+function createConfigService(authOverrides: Record<string, unknown> = {}) {
+  return {
+    getOrThrow: jest.fn(() => ({
+      authMode: 'local',
+      cognitoClientId: '',
+      cognitoIssuer: '',
+      cognitoUserPoolId: '',
+      localUser: {
+        email: 'local.user@fountainlife.local',
+        subject: 'local-user',
+        username: 'Local User',
+      },
+      ...authOverrides,
+    })),
+  } as unknown as ConfigService;
+}
 
 function createContext(request: Record<string, unknown>): ExecutionContext {
   return {

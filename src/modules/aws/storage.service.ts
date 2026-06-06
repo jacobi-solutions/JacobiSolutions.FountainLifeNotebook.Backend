@@ -7,7 +7,10 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type {
+  AwsConfig,
+  DocumentStorageConfig,
+} from '../../shared/config/app.config';
 
 export interface PutObjectRequest {
   body: Buffer | Uint8Array | string;
@@ -22,9 +25,11 @@ export class StorageService {
   private readonly defaultBucketName?: string;
 
   constructor(configService: ConfigService) {
-    const config = configService.getOrThrow<FountainLifeConfig>('fountainLife');
-    this.client = new S3Client({ region: config.awsRegion });
-    this.defaultBucketName = config.storageBucketName;
+    const aws = configService.getOrThrow<AwsConfig>('aws');
+    const documentStorage =
+      configService.getOrThrow<DocumentStorageConfig>('documentStorage');
+    this.client = new S3Client({ region: aws.region });
+    this.defaultBucketName = documentStorage.storageBucketName;
   }
 
   async putObject(request: PutObjectRequest): Promise<void> {

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AssistantService } from '../../assistant/assistant.service';
+import { AssistantService } from '../../assistants/assistant.service';
 import { McpToolContext } from '../mcp-tool-context';
 import { McpToolHandler } from '../mcp-tool-handler';
 import { McpToolExecutionResult } from '../mcp-tool-execution-result';

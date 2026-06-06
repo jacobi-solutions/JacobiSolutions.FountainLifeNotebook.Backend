@@ -1,13 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { setupOpenApi } from './openapi';
+import type { ApplicationConfig } from './shared/config/app.config';
 import { createJsonFileLoggerFromEnvironment } from './shared/logging/json-file.logger';
 
 async function bootstrap() {
   const logger = createJsonFileLoggerFromEnvironment();
   const app = await NestFactory.create(AppModule, { logger });
+  const appConfig = app
+    .get(ConfigService)
+    .getOrThrow<ApplicationConfig>('app');
 
   app.setGlobalPrefix('api');
   app.use(helmet());
@@ -19,19 +24,17 @@ async function bootstrap() {
     }),
   );
   app.enableCors({
-    origin: process.env.FRONTEND_ORIGIN?.split(',') ?? [
-      'http://localhost:5173',
-    ],
+    origin: appConfig.frontendOrigin.split(','),
     credentials: true,
   });
 
   setupOpenApi(app);
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(appConfig.port);
   logger.log(
     {
       event: 'application.started',
-      port: Number(process.env.PORT ?? 3000),
+      port: appConfig.port,
     },
     'Bootstrap',
   );

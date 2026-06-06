@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { passportJwtSecret } from 'jwks-rsa';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type { AuthConfig } from '../../shared/config/app.config';
 import { CognitoJwtPayload, mapCognitoAccessToken } from './cognito-token';
 import type { AuthenticatedUser } from './models/authenticated-user';
 
@@ -12,7 +12,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly cognitoClientId: string;
 
   constructor(configService: ConfigService) {
-    const config = configService.getOrThrow<FountainLifeConfig>('fountainLife');
+    const config = configService.getOrThrow<AuthConfig>('auth');
 
     super({
       issuer: config.cognitoIssuer,

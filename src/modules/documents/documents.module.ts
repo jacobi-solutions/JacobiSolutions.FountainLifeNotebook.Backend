@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AwsModule } from '../aws/aws.module';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type { DocumentStorageConfig } from '../../shared/config/app.config';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentChunkingService } from './document-chunking.service';
 import { DocumentIngestionService } from './document-ingestion.service';
@@ -53,7 +53,7 @@ import {
         s3Storage: S3DocumentStorageService,
       ) => {
         const config =
-          configService.getOrThrow<FountainLifeConfig>('fountainLife');
+          configService.getOrThrow<DocumentStorageConfig>('documentStorage');
         return config.documentStorageProvider === 's3'
           ? s3Storage
           : localStorage;

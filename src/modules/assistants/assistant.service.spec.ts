@@ -1,7 +1,7 @@
 import { AssistantService } from './assistant.service';
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
 import { AssistantRegistry } from './assistant-registry';
-import { NOTEBOOK_ASSISTANT_KEY } from './assistant.constants';
+import { NOTEBOOK_ASSISTANT_KEY } from './notebook-assistant/notebook-assistant.constants';
 
 describe('AssistantService', () => {
   it('creates a persisted conversation and streams user plus assistant updates', async () => {

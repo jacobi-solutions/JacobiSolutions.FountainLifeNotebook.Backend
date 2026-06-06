@@ -1,15 +1,15 @@
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type { AwsConfig } from '../../shared/config/app.config';
 
 @Injectable()
 export class SecretsService {
   private readonly client: SecretsManagerClient;
 
   constructor(configService: ConfigService) {
-    const config = configService.getOrThrow<FountainLifeConfig>('fountainLife');
-    this.client = new SecretsManagerClient({ region: config.awsRegion });
+    const aws = configService.getOrThrow<AwsConfig>('aws');
+    this.client = new SecretsManagerClient({ region: aws.region });
   }
 
   async getSecretString(secretId: string): Promise<string> {

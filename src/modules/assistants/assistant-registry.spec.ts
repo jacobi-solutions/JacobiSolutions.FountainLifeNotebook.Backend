@@ -1,7 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { AssistantHandler } from './assistant-handler';
 import { AssistantRegistry } from './assistant-registry';
-import { NOTEBOOK_ASSISTANT_KEY } from './assistant.constants';
+import { NOTEBOOK_ASSISTANT_KEY } from './notebook-assistant/notebook-assistant.constants';
 
 describe('AssistantRegistry', () => {
   it('lists and resolves registered assistant handlers by key', () => {

@@ -30,7 +30,7 @@ Key areas:
 
 - `src/modules/auth` for local interview auth and optional Cognito JWT validation
 - `src/modules/accounts` for Mongo-backed account registration
-- `src/modules/assistant` for assistant-facing APIs and streaming
+- `src/modules/assistants` for assistant-facing APIs, shared assistant infrastructure, and concrete assistant handlers
 
 ## Default Fast Loop
 

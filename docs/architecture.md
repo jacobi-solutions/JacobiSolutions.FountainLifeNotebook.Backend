@@ -99,6 +99,40 @@ the default here because they add overhead and can make the dependency graph
 harder to reason about. Prefer explicit request parameters unless a feature has a
 clear need for request-scoped dependency injection.
 
+## Configuration
+
+Runtime configuration is split into focused typed groups in
+`src/shared/config/app.config.ts`:
+
+```text
+app
+auth
+aws
+database
+documentStorage
+llm
+logging
+```
+
+Providers should request the smallest config group they need through
+`ConfigService.getOrThrow<T>(...)`. Avoid injecting or recreating a broad
+all-settings object when a focused group communicates the dependency better.
+
+Examples:
+
+```text
+JwtStrategy -> auth
+MongooseModule -> database
+DocumentsModule -> documentStorage
+StorageService -> aws + documentStorage
+LlmProviderService -> llm
+main.ts -> app
+```
+
+Keep direct `process.env` reads inside config construction, startup-only logger
+creation, or very small bootstrap seams. Controllers and business services
+should use typed config groups through dependency injection.
+
 ## Contracts
 
 The API intentionally uses command-style POST endpoints for app operations. The

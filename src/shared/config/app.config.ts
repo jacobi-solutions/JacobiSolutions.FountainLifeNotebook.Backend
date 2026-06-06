@@ -15,80 +15,141 @@ export type DocumentStorageProvider =
   (typeof DOCUMENT_STORAGE_PROVIDERS)[number];
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
 
-export interface FountainLifeConfig {
-  appEnvironment: AppEnvironment;
+export interface ApplicationConfig {
+  environment: AppEnvironment;
+  frontendOrigin: string;
+  port: number;
+}
+
+export interface AuthConfig {
   authMode: AuthMode;
-  awsRegion: string;
   cognitoClientId: string;
   cognitoIssuer: string;
   cognitoUserPoolId: string;
+  localUser: {
+    email: string;
+    subject: string;
+    username: string;
+  };
+}
+
+export interface AwsConfig {
+  region: string;
+}
+
+export interface DatabaseConfig {
+  databaseName: string;
+  uri: string;
+}
+
+export interface DocumentStorageConfig {
   documentStorageProvider: DocumentStorageProvider;
   documentStorageRoot: string;
-  frontendOrigin: string;
+  storageBucketName?: string;
+}
+
+export interface LlmConfig {
   llmProvider: LlmProvider;
+  openAiApiKey?: string;
+  openAiModel: string;
+}
+
+export interface LoggingConfig {
   logApplicationName: string;
   logDirectory: string;
   logFileName: string;
   logLevel: MinimumLogLevel;
-  mongodbDatabase: string;
-  mongodbUri: string;
-  openAiApiKey?: string;
-  openAiModel: string;
-  port: number;
-  storageBucketName?: string;
 }
 
-export const appConfig = registerAs('fountainLife', (): FountainLifeConfig => {
-  const appEnvironment = readEnum(
+export const applicationConfig = registerAs('app', (): ApplicationConfig => ({
+  environment: readEnum(
     process.env.APP_ENV,
     APP_ENVIRONMENTS,
     'local',
     'APP_ENV',
-  );
+  ),
+  frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+  port: Number(process.env.PORT ?? 3000),
+}));
+
+export const awsConfig = registerAs('aws', (): AwsConfig => ({
+  region: process.env.AWS_REGION ?? 'us-east-1',
+}));
+
+export const authConfig = registerAs('auth', (): AuthConfig => {
   const authMode = readEnum(
     process.env.AUTH_MODE,
     AUTH_MODES,
     'local',
     'AUTH_MODE',
   );
-  const documentStorageProvider = readEnum(
-    process.env.DOCUMENT_STORAGE_PROVIDER,
-    DOCUMENT_STORAGE_PROVIDERS,
-    'local',
-    'DOCUMENT_STORAGE_PROVIDER',
-  );
   const awsRegion = process.env.AWS_REGION ?? 'us-east-1';
   const cognitoUserPoolId = process.env.COGNITO_USER_POOL_ID ?? '';
+  const localEmail =
+    process.env.LOCAL_AUTH_EMAIL ?? 'local.user@fountainlife.local';
+  const localSubject = process.env.LOCAL_AUTH_USER_ID ?? 'local-user';
 
   return {
-    appEnvironment,
     authMode,
-    awsRegion,
     cognitoClientId: process.env.COGNITO_CLIENT_ID ?? '',
     cognitoIssuer: `https://cognito-idp.${awsRegion}.amazonaws.com/${cognitoUserPoolId}`,
     cognitoUserPoolId,
-    documentStorageProvider,
-    documentStorageRoot: process.env.DOCUMENT_STORAGE_ROOT ?? 'var/uploads',
-    frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
-    llmProvider: readEnum(
-      process.env.LLM_PROVIDER,
-      LLM_PROVIDERS,
-      'mock',
-      'LLM_PROVIDER',
-    ),
-    logApplicationName:
-      process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
-    logDirectory: process.env.LOG_DIRECTORY ?? 'var/logs',
-    logFileName: process.env.LOG_FILE_NAME ?? 'backend-%DATE%.log',
-    logLevel: normalizeMinimumLogLevel(process.env.LOG_LEVEL),
-    mongodbDatabase: process.env.MONGODB_DATABASE ?? 'fountain-life-notebook',
-    mongodbUri: process.env.MONGODB_URI ?? '',
-    openAiApiKey: process.env.OPENAI_API_KEY,
-    openAiModel: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
-    port: Number(process.env.PORT ?? 3000),
-    storageBucketName: process.env.STORAGE_BUCKET_NAME,
+    localUser: {
+      email: localEmail,
+      subject: localSubject,
+      username:
+        process.env.LOCAL_AUTH_USERNAME ?? localEmail ?? localSubject,
+    },
   };
 });
+
+export const databaseConfig = registerAs('database', (): DatabaseConfig => ({
+  databaseName: process.env.MONGODB_DATABASE ?? 'fountain-life-notebook',
+  uri: process.env.MONGODB_URI ?? '',
+}));
+
+export const documentStorageConfig = registerAs(
+  'documentStorage',
+  (): DocumentStorageConfig => ({
+    documentStorageProvider: readEnum(
+      process.env.DOCUMENT_STORAGE_PROVIDER,
+      DOCUMENT_STORAGE_PROVIDERS,
+      'local',
+      'DOCUMENT_STORAGE_PROVIDER',
+    ),
+    documentStorageRoot: process.env.DOCUMENT_STORAGE_ROOT ?? 'var/uploads',
+    storageBucketName: process.env.STORAGE_BUCKET_NAME,
+  }),
+);
+
+export const llmConfig = registerAs('llm', (): LlmConfig => ({
+  llmProvider: readEnum(
+    process.env.LLM_PROVIDER,
+    LLM_PROVIDERS,
+    'mock',
+    'LLM_PROVIDER',
+  ),
+  openAiApiKey: process.env.OPENAI_API_KEY,
+  openAiModel: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
+}));
+
+export const loggingConfig = registerAs('logging', (): LoggingConfig => ({
+  logApplicationName:
+    process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
+  logDirectory: process.env.LOG_DIRECTORY ?? 'var/logs',
+  logFileName: process.env.LOG_FILE_NAME ?? 'backend-%DATE%.log',
+  logLevel: normalizeMinimumLogLevel(process.env.LOG_LEVEL),
+}));
+
+export const configLoaders = [
+  applicationConfig,
+  authConfig,
+  awsConfig,
+  databaseConfig,
+  documentStorageConfig,
+  llmConfig,
+  loggingConfig,
+];
 
 export function validateConfig(config: Record<string, unknown>) {
   const appEnvironment = readEnum(

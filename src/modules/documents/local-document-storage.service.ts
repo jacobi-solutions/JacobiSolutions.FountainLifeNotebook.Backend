@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { dirname, relative, resolve } from 'path';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type { DocumentStorageConfig } from '../../shared/config/app.config';
 import {
   DocumentStorageService,
   StoreDocumentRequest,
@@ -16,7 +16,8 @@ export class LocalDocumentStorageService extends DocumentStorageService {
 
   constructor(configService: ConfigService) {
     super();
-    const config = configService.getOrThrow<FountainLifeConfig>('fountainLife');
+    const config =
+      configService.getOrThrow<DocumentStorageConfig>('documentStorage');
     this.storageRoot = resolve(process.cwd(), config.documentStorageRoot);
   }
 

@@ -3,11 +3,11 @@ import {
   NOTEBOOK_ASSISTANT_DESCRIPTION,
   NOTEBOOK_ASSISTANT_KEY,
   NOTEBOOK_ASSISTANT_NAME,
-} from './assistant.constants';
+} from './notebook-assistant.constants';
 import {
   AssistantHandler,
   AssistantQuestionRequest,
-} from './assistant-handler';
+} from '../assistant-handler';
 import { NotebookAgentService } from './notebook-agent.service';
 
 @Injectable()

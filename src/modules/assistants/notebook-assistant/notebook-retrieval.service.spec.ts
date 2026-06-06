@@ -1,4 +1,4 @@
-import { DocumentChunksRepository } from '../documents/document-chunks.repository';
+import { DocumentChunksRepository } from '../../documents/document-chunks.repository';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
 
 describe('NotebookRetrievalService', () => {

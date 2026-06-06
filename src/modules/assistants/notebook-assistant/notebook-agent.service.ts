@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Citation } from './data-contracts/citation';
+import { Citation } from '../data-contracts/citation';
 import { LlmProviderService } from './llm-provider.service';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
 

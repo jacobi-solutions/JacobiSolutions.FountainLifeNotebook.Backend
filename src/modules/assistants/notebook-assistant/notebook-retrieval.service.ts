@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { DocumentChunksRepository } from '../documents/document-chunks.repository';
+import { DocumentChunksRepository } from '../../documents/document-chunks.repository';
 
 const MAX_RETRIEVED_CHUNKS = 6;
 const STOP_WORDS = new Set([

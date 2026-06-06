@@ -9,7 +9,6 @@ import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
 import {
   ASSISTANT_SEARCH_STATUS_TEXT,
-  NOTEBOOK_ASSISTANT_DISPLAY_NAME,
 } from './assistant.constants';
 import { AssistantSummary } from './assistant-handler';
 import { AssistantRegistry } from './assistant-registry';
@@ -85,6 +84,7 @@ export class AssistantService {
     });
     const assistantMessage = this.createAssistantMessage(
       turnId,
+      handler.summary.name,
       answer.answer,
       answer.citations,
     );
@@ -205,11 +205,12 @@ export class AssistantService {
 
   private createAssistantMessage(
     turnId: string,
+    assistantName: string,
     text: string,
     citations: Citation[],
   ): AssistantConversationItem {
     return {
-      actorDisplayName: NOTEBOOK_ASSISTANT_DISPLAY_NAME,
+      actorDisplayName: assistantName,
       actorType: 'assistant',
       createdDateUtc: new Date(),
       id: randomUUID(),

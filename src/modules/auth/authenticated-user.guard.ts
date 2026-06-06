@@ -1,17 +1,24 @@
 import { ExecutionContext, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AuthGuard } from '@nestjs/passport';
 import type { Request } from 'express';
 import type { Observable } from 'rxjs';
+import type { AuthConfig } from '../../shared/config/app.config';
 import type { AuthenticatedUser } from './models/authenticated-user';
 
 type RequestWithUser = Request & { user?: AuthenticatedUser };
 
 @Injectable()
 export class AuthenticatedUserGuard extends AuthGuard('jwt') {
+  constructor(private readonly configService: ConfigService) {
+    super();
+  }
+
   canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
-    if ((process.env.AUTH_MODE ?? 'local') !== 'cognito') {
+    const config = this.configService.getOrThrow<AuthConfig>('auth');
+    if (config.authMode !== 'cognito') {
       const request = context.switchToHttp().getRequest<RequestWithUser>();
-      request.user = localUserFromHeaders(request);
+      request.user = localUserFromHeaders(request, config.localUser);
       return true;
     }
 
@@ -19,19 +26,21 @@ export class AuthenticatedUserGuard extends AuthGuard('jwt') {
   }
 }
 
-function localUserFromHeaders(request: Request): AuthenticatedUser {
-  const subject = firstHeader(request.headers['x-local-user-id']) ?? process.env.LOCAL_AUTH_USER_ID ?? 'local-user';
+function localUserFromHeaders(
+  request: Request,
+  configuredUser: AuthenticatedUser,
+): AuthenticatedUser {
+  const subject = firstHeader(request.headers['x-local-user-id']) ?? configuredUser.subject;
   const email =
     firstHeader(request.headers['x-local-user-email']) ??
-    process.env.LOCAL_AUTH_EMAIL ??
-    'local.user@fountainlife.local';
+    configuredUser.email;
 
   return {
     email,
     subject,
     username:
       firstHeader(request.headers['x-local-username']) ??
-      process.env.LOCAL_AUTH_USERNAME ??
+      configuredUser.username ??
       email ??
       subject,
   };

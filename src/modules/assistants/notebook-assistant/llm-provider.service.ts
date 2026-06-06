@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { ChatOpenAI } from '@langchain/openai';
-import type { FountainLifeConfig } from '../../shared/config/app.config';
+import type { LlmConfig } from '../../../shared/config/app.config';
 import type { RetrievedNotebookChunk } from './notebook-retrieval.service';
 
 export interface GenerateNotebookAnswerRequest {
@@ -11,10 +11,10 @@ export interface GenerateNotebookAnswerRequest {
 
 @Injectable()
 export class LlmProviderService {
-  private readonly config: FountainLifeConfig;
+  private readonly config: LlmConfig;
 
   constructor(configService: ConfigService) {
-    this.config = configService.getOrThrow<FountainLifeConfig>('fountainLife');
+    this.config = configService.getOrThrow<LlmConfig>('llm');
   }
 
   async generateAnswer(request: GenerateNotebookAnswerRequest) {

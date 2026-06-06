@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { AccountsController } from './modules/accounts/accounts.controller';
-import { AssistantController } from './modules/assistant/assistant.controller';
+import { AssistantController } from './modules/assistants/assistant.controller';
 import { DocumentsController } from './modules/documents/documents.controller';
 import { HealthController } from './modules/health/health.controller';
 import { AccountsService } from './modules/accounts/accounts.service';
-import { AssistantService } from './modules/assistant/assistant.service';
+import { AssistantService } from './modules/assistants/assistant.service';
 import { DocumentsService } from './modules/documents/documents.service';
 import { McpController } from './modules/mcp/mcp.controller';
 import { McpToolRegistry } from './modules/mcp/mcp-tool-registry';

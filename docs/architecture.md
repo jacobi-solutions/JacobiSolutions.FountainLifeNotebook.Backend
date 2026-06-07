@@ -259,7 +259,7 @@ AssistantController
           -> NotebookRetrievalService
             -> DocumentChunksRepository
           -> LlmProviderService
-            -> mock answer or OpenAI
+            -> mock answer or Bedrock
 ```
 
 These longer flows are acceptable when each step has a clear responsibility.
@@ -280,7 +280,7 @@ Browser
         -> MongoDB Atlas
         -> S3 document bucket
         -> Cognito JWKS validation
-        -> OpenAI
+        -> Amazon Bedrock
 ```
 
 CloudFront is the public HTTPS boundary for the first deployed demo. The
@@ -288,7 +288,8 @@ frontend can use `VITE_API_BASE_URL=/api`, which avoids mixed-content issues and
 keeps browser traffic on one origin. The backend still enables CORS for local
 development and for future custom-domain deployments.
 
-ECS injects secret values from AWS Secrets Manager into the normal process
-environment. The app continues to read `MONGODB_URI` and `OPENAI_API_KEY`
-through typed config validation rather than fetching secrets inside business
+ECS injects the MongoDB URI from AWS Secrets Manager into the normal process
+environment. The backend invokes Bedrock through the ECS task role, so no LLM
+API key is stored in app secrets. Runtime settings still flow through typed
+config validation rather than direct `process.env` reads inside business
 services.

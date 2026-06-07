@@ -7,7 +7,7 @@ import {
 const APP_ENVIRONMENTS = ['local', 'test', 'production'] as const;
 const AUTH_MODES = ['cognito', 'local'] as const;
 const DOCUMENT_STORAGE_PROVIDERS = ['local', 's3'] as const;
-const LLM_PROVIDERS = ['mock', 'openai'] as const;
+const LLM_PROVIDERS = ['mock', 'bedrock'] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 export type AuthMode = (typeof AUTH_MODES)[number];
@@ -50,8 +50,7 @@ export interface DocumentStorageConfig {
 
 export interface LlmConfig {
   llmProvider: LlmProvider;
-  openAiApiKey?: string;
-  openAiModel: string;
+  bedrockModelId?: string;
 }
 
 export interface LoggingConfig {
@@ -122,16 +121,24 @@ export const documentStorageConfig = registerAs(
   }),
 );
 
-export const llmConfig = registerAs('llm', (): LlmConfig => ({
-  llmProvider: readEnum(
+export const llmConfig = registerAs('llm', (): LlmConfig => {
+  const llmProvider = readEnum(
     process.env.LLM_PROVIDER,
     LLM_PROVIDERS,
     'mock',
     'LLM_PROVIDER',
-  ),
-  openAiApiKey: process.env.OPENAI_API_KEY,
-  openAiModel: process.env.OPENAI_MODEL ?? 'gpt-4.1-mini',
-}));
+  );
+  const bedrockModelId = process.env.BEDROCK_MODEL_ID;
+
+  if (llmProvider === 'bedrock' && !bedrockModelId) {
+    throw new Error('Missing required configuration: BEDROCK_MODEL_ID');
+  }
+
+  return {
+    llmProvider,
+    bedrockModelId,
+  };
+});
 
 export const loggingConfig = registerAs('logging', (): LoggingConfig => ({
   logApplicationName:
@@ -182,8 +189,8 @@ export function validateConfig(config: Record<string, unknown>) {
     required.push('AWS_REGION', 'STORAGE_BUCKET_NAME');
   }
 
-  if (llmProvider === 'openai') {
-    required.push('OPENAI_API_KEY', 'OPENAI_MODEL');
+  if (llmProvider === 'bedrock') {
+    required.push('AWS_REGION', 'BEDROCK_MODEL_ID');
   }
 
   if (appEnvironment === 'production') {
@@ -195,8 +202,8 @@ export function validateConfig(config: Record<string, unknown>) {
       throw new Error('Production requires DOCUMENT_STORAGE_PROVIDER=s3.');
     }
 
-    if (llmProvider !== 'openai') {
-      throw new Error('Production requires LLM_PROVIDER=openai.');
+    if (llmProvider !== 'bedrock') {
+      throw new Error('Production requires LLM_PROVIDER=bedrock.');
     }
   }
 

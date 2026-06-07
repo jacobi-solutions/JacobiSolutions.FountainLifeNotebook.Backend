@@ -5,7 +5,7 @@ NestJS API for the Fountain Life interview NotebookLM-style app.
 ## Stack Shape
 
 - HTTP layer: NestJS controllers with Swagger-decorated data contracts and a global `/api` prefix.
-- Runtime modes: local interview mode by default; production requires Cognito auth, S3 document storage, and OpenAI.
+- Runtime modes: local interview mode by default; production requires Cognito auth, S3 document storage, and Bedrock.
 - Auth: local interview mode by default, Cognito JWT mode available with `AUTH_MODE=cognito`.
 - Services: controller orchestration stays thin; business behavior lives in module services.
 - Persistence: Mongoose schemas and repository classes backed by a shared `BaseRepository`.
@@ -110,7 +110,7 @@ docker stop fountain-life-notebook-mongo
 docker rm fountain-life-notebook-mongo
 ```
 
-For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=openai`, and provide the required Cognito, S3, MongoDB, and OpenAI settings. Startup validation fails fast if any production provider is missing.
+For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=bedrock`, and provide the required Cognito, S3, MongoDB, and Bedrock settings. Startup validation fails fast if any production provider is missing.
 
 ## AWS Deployment Foundation
 
@@ -134,9 +134,9 @@ ECS injects normal environment values plus Secrets Manager values:
 APP_ENV=production
 AUTH_MODE=cognito
 DOCUMENT_STORAGE_PROVIDER=s3
-LLM_PROVIDER=openai
+LLM_PROVIDER=bedrock
+BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 MONGODB_URI=<Secrets Manager>
-OPENAI_API_KEY=<Secrets Manager>
 ```
 
 Use `Deploy Backend` in GitHub Actions only after Terraform has created ECR, ECS, Cognito, S3, Secrets Manager placeholders, and the GitHub OIDC role.

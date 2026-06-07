@@ -26,7 +26,7 @@ describe('validateConfig', () => {
     expect(validateConfig(config)).toBe(config);
   });
 
-  it('requires production deployments to use Cognito, S3, and OpenAI', () => {
+  it('requires production deployments to use Cognito, S3, and Bedrock', () => {
     expect(() =>
       validateConfig({
         APP_ENV: 'production',
@@ -50,5 +50,18 @@ describe('validateConfig', () => {
         MONGODB_URI: 'mongodb://localhost:27017/fountain-life-notebook',
       }),
     ).toThrow('Missing required configuration: STORAGE_BUCKET_NAME');
+  });
+
+  it('requires Bedrock model configuration when Bedrock is enabled', () => {
+    expect(() =>
+      validateConfig({
+        AWS_REGION: 'us-east-1',
+        AUTH_MODE: 'local',
+        DOCUMENT_STORAGE_PROVIDER: 'local',
+        LLM_PROVIDER: 'bedrock',
+        MONGODB_DATABASE: 'fountain-life-notebook',
+        MONGODB_URI: 'mongodb://localhost:27017/fountain-life-notebook',
+      }),
+    ).toThrow('Missing required configuration: BEDROCK_MODEL_ID');
   });
 });

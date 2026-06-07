@@ -1,7 +1,10 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  BedrockRuntimeClient,
+  ConverseCommand,
+} from '@aws-sdk/client-bedrock-runtime';
 import { ConfigService } from '@nestjs/config';
-import { ChatOpenAI } from '@langchain/openai';
-import type { LlmConfig } from '../../../shared/config/app.config';
+import type { AwsConfig, LlmConfig } from '../../../shared/config/app.config';
 import type { RetrievedNotebookChunk } from './notebook-retrieval.service';
 
 export interface GenerateNotebookAnswerRequest {
@@ -11,29 +14,62 @@ export interface GenerateNotebookAnswerRequest {
 
 @Injectable()
 export class LlmProviderService {
+  private readonly logger = new Logger(LlmProviderService.name);
+  private readonly bedrockClient?: BedrockRuntimeClient;
   private readonly config: LlmConfig;
 
   constructor(configService: ConfigService) {
     this.config = configService.getOrThrow<LlmConfig>('llm');
+    if (this.config.llmProvider === 'bedrock') {
+      const awsConfig = configService.getOrThrow<AwsConfig>('aws');
+      this.bedrockClient = new BedrockRuntimeClient({
+        region: awsConfig.region,
+      });
+    }
   }
 
   async generateAnswer(request: GenerateNotebookAnswerRequest) {
-    if (this.config.llmProvider === 'openai') {
-      return this.generateOpenAiAnswer(request);
+    if (this.config.llmProvider === 'bedrock') {
+      return this.generateBedrockAnswer(request);
     }
 
     return this.generateMockAnswer(request);
   }
 
-  private async generateOpenAiAnswer(request: GenerateNotebookAnswerRequest) {
-    const model = new ChatOpenAI({
-      apiKey: this.config.openAiApiKey,
-      model: this.config.openAiModel,
-      temperature: 0.2,
-    });
-    const response = await model.invoke(buildPrompt(request));
+  private async generateBedrockAnswer(request: GenerateNotebookAnswerRequest) {
+    if (!this.bedrockClient) {
+      throw new Error('Bedrock client is not configured.');
+    }
+    if (!this.config.bedrockModelId) {
+      throw new Error('Bedrock model id is not configured.');
+    }
 
-    return stringifyMessageContent(response.content);
+    try {
+      const response = await this.bedrockClient.send(
+        new ConverseCommand({
+          inferenceConfig: {
+            maxTokens: 1200,
+            temperature: 0.2,
+          },
+          messages: [
+            {
+              content: [{ text: buildPrompt(request) }],
+              role: 'user',
+            },
+          ],
+          modelId: this.config.bedrockModelId,
+        }),
+      );
+
+      return stringifyMessageContent(response.output?.message?.content);
+    } catch (error) {
+      this.logger.error({
+        error: error instanceof Error ? error.message : String(error),
+        event: 'bedrock.invoke_failed',
+        modelId: this.config.bedrockModelId,
+      });
+      throw error;
+    }
   }
 
   private generateMockAnswer(request: GenerateNotebookAnswerRequest) {

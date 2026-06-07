@@ -9,6 +9,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { HealthModule } from './modules/health/health.module';
 import { McpModule } from './modules/mcp/mcp.module';
+import { NotebooksModule } from './modules/notebooks/notebooks.module';
 import {
   configLoaders,
   type DatabaseConfig,
@@ -40,6 +41,7 @@ import { RequestResponseLoggingInterceptor } from './shared/http/request-respons
     AuthModule,
     AccountsModule,
     DocumentsModule,
+    NotebooksModule,
     AssistantsModule,
     McpModule,
     HealthModule,

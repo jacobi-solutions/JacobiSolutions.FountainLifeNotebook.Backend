@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { DocumentsModule } from '../documents/documents.module';
+import { KnowledgeBaseModule } from '../knowledge-base/knowledge-base.module';
+import { NotebooksModule } from '../notebooks/notebooks.module';
 import {
   AssistantConversation,
   AssistantConversationSchema,
@@ -18,6 +20,8 @@ import { NotebookRetrievalService } from './notebook-assistant/notebook-retrieva
 @Module({
   imports: [
     DocumentsModule,
+    KnowledgeBaseModule,
+    NotebooksModule,
     MongooseModule.forFeature([
       { name: AssistantConversation.name, schema: AssistantConversationSchema },
     ]),

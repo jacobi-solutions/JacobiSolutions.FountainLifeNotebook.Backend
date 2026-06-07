@@ -109,6 +109,22 @@ export class AssistantController {
       return;
     }
 
+    if (!request.notebookId) {
+      response.write(
+        `data: ${JSON.stringify(
+          ResponseFactory.failure(
+            {
+              errorCode: 'VALIDATION_ERROR',
+              errorMessage: 'Notebook id is required.',
+            },
+            correlationId,
+          ),
+        )}\n\n`,
+      );
+      response.end();
+      return;
+    }
+
     try {
       for await (const update of this.assistantService.streamMessage(
         assistantKey,

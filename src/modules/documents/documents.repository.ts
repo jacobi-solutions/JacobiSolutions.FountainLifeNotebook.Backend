@@ -13,16 +13,37 @@ export class DocumentsRepository extends BaseRepository<DocumentRecord, Document
     super(documentModel);
   }
 
-  findByIdForOwner(documentId: string, ownerUserId: string) {
-    return this.model.findOne({ id: documentId, ownerUserId }).exec();
+  findByIdForNotebook(documentId: string, notebookId: string) {
+    return this.model.findOne({ id: documentId, notebookId }).exec();
   }
 
-  findByOwner(ownerUserId: string) {
-    return this.model.find({ ownerUserId }).sort({ lastUpdatedDateUtc: -1 }).exec();
+  findByNotebook(notebookId: string) {
+    return this.model
+      .find({ notebookId })
+      .sort({ lastUpdatedDateUtc: -1 })
+      .exec();
   }
 
-  async deleteByIdForOwner(documentId: string, ownerUserId: string) {
-    const result = await this.model.deleteOne({ id: documentId, ownerUserId }).exec();
+  findByNotebookIds(notebookIds: string[]) {
+    return this.model
+      .aggregate<{ _id: string; count: number }>([
+        {
+          $match: {
+            notebookId: { $in: notebookIds },
+          },
+        },
+        {
+          $group: {
+            _id: '$notebookId',
+            count: { $sum: 1 },
+          },
+        },
+      ])
+      .exec();
+  }
+
+  async deleteByIdForNotebook(documentId: string, notebookId: string) {
+    const result = await this.model.deleteOne({ id: documentId, notebookId }).exec();
     return result.deletedCount === 1;
   }
 }

@@ -26,6 +26,7 @@ export class LocalDocumentStorageService extends DocumentStorageService {
   ): Promise<StoredDocumentObject> {
     const storageKey = createDocumentStorageKey(
       request.ownerUserId,
+      request.notebookId,
       request.originalFileName,
     );
     const filePath = this.resolveStoragePath(storageKey);

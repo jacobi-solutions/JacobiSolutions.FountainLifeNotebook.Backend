@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
+import { NotebooksService } from '../notebooks/notebooks.service';
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
 import {
   ASSISTANT_SEARCH_STATUS_TEXT,
@@ -38,6 +39,7 @@ export class AssistantService {
   constructor(
     private readonly conversationsRepository: AssistantConversationsRepository,
     private readonly assistantRegistry: AssistantRegistry,
+    private readonly notebooksService: NotebooksService,
   ) {}
 
   listAssistants(): AssistantSummary[] {
@@ -50,6 +52,7 @@ export class AssistantService {
     user: AuthenticatedUser,
   ): AsyncGenerator<AssistantThreadUpdate> {
     const handler = this.assistantRegistry.getOrThrow(assistantKey);
+    await this.notebooksService.assertNotebookAccess(request.notebookId, user);
     const conversation = await this.loadOrCreateConversation(
       assistantKey,
       request,
@@ -80,6 +83,7 @@ export class AssistantService {
     const answer = await handler.answerQuestion({
       documentIds: request.documentIds,
       message: request.message,
+      notebookId: request.notebookId,
       ownerUserId: user.subject,
     });
     const assistantMessage = this.createAssistantMessage(
@@ -143,13 +147,19 @@ export class AssistantService {
         );
       }
 
+      if (existing.metadata?.notebookId !== request.notebookId) {
+        throw new BadRequestException(
+          'Conversation belongs to a different notebook.',
+        );
+      }
+
       return existing;
     }
 
     return this.conversationsRepository.create({
       assistantKey,
       items: [],
-      metadata: {},
+      metadata: { notebookId: request.notebookId },
       participants: this.createParticipants(
         request.participantUserIds ?? [],
         user,

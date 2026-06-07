@@ -23,10 +23,10 @@ export class DocumentChunksRepository extends BaseRepository<
     return this.model.insertMany(chunks);
   }
 
-  findByOwnerAndDocumentIds(ownerUserId: string, documentIds?: string[]) {
+  findByNotebookAndDocumentIds(notebookId: string, documentIds?: string[]) {
     return this.model
       .find({
-        ownerUserId,
+        notebookId,
         ...(documentIds && documentIds.length > 0
           ? { documentId: { $in: documentIds } }
           : {}),
@@ -35,14 +35,14 @@ export class DocumentChunksRepository extends BaseRepository<
       .exec();
   }
 
-  findByOwnerAndDocumentId(ownerUserId: string, documentId: string) {
+  findByNotebookAndDocumentId(notebookId: string, documentId: string) {
     return this.model
-      .find({ documentId, ownerUserId })
+      .find({ documentId, notebookId })
       .sort({ chunkIndex: 1 })
       .exec();
   }
 
-  async deleteByDocumentIdForOwner(documentId: string, ownerUserId: string) {
-    await this.model.deleteMany({ documentId, ownerUserId }).exec();
+  async deleteByDocumentIdForNotebook(documentId: string, notebookId: string) {
+    await this.model.deleteMany({ documentId, notebookId }).exec();
   }
 }

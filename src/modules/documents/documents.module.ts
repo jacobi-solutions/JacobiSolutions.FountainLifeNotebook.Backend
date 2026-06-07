@@ -1,7 +1,9 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AwsModule } from '../aws/aws.module';
+import { KnowledgeBaseModule } from '../knowledge-base/knowledge-base.module';
+import { NotebooksModule } from '../notebooks/notebooks.module';
 import type { DocumentStorageConfig } from '../../shared/config/app.config';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentChunkingService } from './document-chunking.service';
@@ -25,6 +27,8 @@ import {
 @Module({
   imports: [
     AwsModule,
+    KnowledgeBaseModule,
+    forwardRef(() => NotebooksModule),
     MongooseModule.forFeature([
       { name: DocumentRecord.name, schema: DocumentRecordSchema },
       { name: DocumentChunk.name, schema: DocumentChunkSchema },

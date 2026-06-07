@@ -3,6 +3,10 @@ export const DOCUMENT_TEXT_PREVIEW_LENGTH = 320;
 export const DOCUMENT_CHUNK_SIZE = 1200;
 export const DOCUMENT_CHUNK_OVERLAP = 200;
 
-export const DOCUMENT_PROCESSING_STATUSES = ['failed', 'ready'] as const;
+export const DOCUMENT_PROCESSING_STATUSES = [
+  'failed',
+  'processing',
+  'ready',
+] as const;
 export type DocumentProcessingStatus =
   (typeof DOCUMENT_PROCESSING_STATUSES)[number];

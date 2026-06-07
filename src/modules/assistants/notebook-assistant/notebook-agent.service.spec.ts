@@ -1,3 +1,4 @@
+import { KnowledgeBaseService } from '../../knowledge-base/knowledge-base.service';
 import { LlmProviderService } from './llm-provider.service';
 import { NotebookAgentService } from './notebook-agent.service';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
@@ -12,11 +13,13 @@ describe('NotebookAgentService', () => {
         retrieve: jest.fn(async () => []),
       } as unknown as NotebookRetrievalService,
       llmProvider,
+      disabledKnowledgeBaseService(),
     );
 
     const answer = await service.answerQuestion(
       'What is the care plan?',
       'user-1',
+      'notebook-1',
     );
 
     expect(answer.citations).toEqual([]);
@@ -42,12 +45,19 @@ describe('NotebookAgentService', () => {
         async () => 'Complete onboarding before diagnostics. [1]',
       ),
     } as unknown as LlmProviderService;
-    const service = new NotebookAgentService(retrievalService, llmProvider);
+    const service = new NotebookAgentService(
+      retrievalService,
+      llmProvider,
+      disabledKnowledgeBaseService(),
+    );
 
     await expect(
-      service.answerQuestion('What should happen first?', 'user-1', [
-        'document-1',
-      ]),
+      service.answerQuestion(
+        'What should happen first?',
+        'user-1',
+        'notebook-1',
+        ['document-1'],
+      ),
     ).resolves.toEqual({
       answer: 'Complete onboarding before diagnostics. [1]',
       citations: [
@@ -62,6 +72,7 @@ describe('NotebookAgentService', () => {
     expect(retrievalService.retrieve).toHaveBeenCalledWith(
       'What should happen first?',
       'user-1',
+      'notebook-1',
       ['document-1'],
     );
     expect(llmProvider.generateAnswer).toHaveBeenCalledWith({
@@ -69,4 +80,47 @@ describe('NotebookAgentService', () => {
       question: 'What should happen first?',
     });
   });
+
+  it('uses Bedrock Knowledge Bases when KB retrieval is enabled', async () => {
+    const retrievalService = {
+      retrieve: jest.fn(),
+    } as unknown as NotebookRetrievalService;
+    const knowledgeBaseService = {
+      answerQuestion: jest.fn(async () => ({
+        answer: 'Knowledge base answer.',
+        citations: [],
+      })),
+      isBedrockKnowledgeBaseEnabled: true,
+    } as unknown as KnowledgeBaseService;
+    const service = new NotebookAgentService(
+      retrievalService,
+      {} as unknown as LlmProviderService,
+      knowledgeBaseService,
+    );
+
+    await expect(
+      service.answerQuestion(
+        'What should happen first?',
+        'user-1',
+        'notebook-1',
+        ['document-1'],
+      ),
+    ).resolves.toEqual({
+      answer: 'Knowledge base answer.',
+      citations: [],
+    });
+    expect(retrievalService.retrieve).not.toHaveBeenCalled();
+    expect(knowledgeBaseService.answerQuestion).toHaveBeenCalledWith({
+      documentIds: ['document-1'],
+      message: 'What should happen first?',
+      notebookId: 'notebook-1',
+      ownerUserId: 'user-1',
+    });
+  });
 });
+
+function disabledKnowledgeBaseService() {
+  return {
+    isBedrockKnowledgeBaseEnabled: false,
+  } as unknown as KnowledgeBaseService;
+}

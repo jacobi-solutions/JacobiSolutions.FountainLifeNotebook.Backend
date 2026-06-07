@@ -7,4 +7,9 @@ export class ViewDocumentRequest extends BaseRequest {
   @IsString()
   @IsNotEmpty()
   documentId!: string;
+
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  notebookId!: string;
 }

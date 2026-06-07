@@ -137,7 +137,7 @@ describe('Fountain Life Notebook API e2e', () => {
 
     const response = await request(app.getHttpServer())
       .post('/api/assistants/notebook/stream-message')
-      .send({ message: 'hello' })
+      .send({ message: 'hello', notebookId: 'notebook-1' })
       .expect(200);
 
     expect(response.text).toContain('ASSISTANT_STREAM_ERROR');

@@ -22,6 +22,9 @@ export class DocumentSummary {
   lastUpdatedDateUtc!: Date;
 
   @ApiProperty()
+  notebookId!: string;
+
+  @ApiProperty()
   originalFileName!: string;
 
   @ApiProperty({ enum: DOCUMENT_PROCESSING_STATUSES })
@@ -29,4 +32,7 @@ export class DocumentSummary {
 
   @ApiProperty({ required: false })
   textPreview?: string;
+
+  @ApiProperty({ required: false })
+  knowledgeBaseStatusReason?: string;
 }

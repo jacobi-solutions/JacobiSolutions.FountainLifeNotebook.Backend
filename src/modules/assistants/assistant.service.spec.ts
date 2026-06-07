@@ -2,6 +2,7 @@ import { AssistantService } from './assistant.service';
 import { AssistantConversationsRepository } from './assistant-conversations.repository';
 import { AssistantRegistry } from './assistant-registry';
 import { NOTEBOOK_ASSISTANT_KEY } from './notebook-assistant/notebook-assistant.constants';
+import { NotebooksService } from '../notebooks/notebooks.service';
 
 describe('AssistantService', () => {
   it('creates a persisted conversation and streams user plus assistant updates', async () => {
@@ -38,10 +39,15 @@ describe('AssistantService', () => {
         name: 'Notebook Assistant',
       },
     };
-    const service = new AssistantService(repository, {
-      getOrThrow: jest.fn(() => handler),
-      listSummaries: jest.fn(() => [handler.summary]),
-    } as unknown as AssistantRegistry);
+    const notebooksService = createNotebooksService();
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => handler),
+        listSummaries: jest.fn(() => [handler.summary]),
+      } as unknown as AssistantRegistry,
+      notebooksService,
+    );
     const updates = [];
 
     for await (const update of service.streamMessage(
@@ -49,6 +55,7 @@ describe('AssistantService', () => {
       {
         documentIds: ['document-1'],
         message: 'hello',
+        notebookId: 'notebook-1',
         participantUserIds: ['teammate-1'],
       },
       {
@@ -63,16 +70,22 @@ describe('AssistantService', () => {
     expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         assistantKey: NOTEBOOK_ASSISTANT_KEY,
+        metadata: { notebookId: 'notebook-1' },
         participants: expect.arrayContaining([
           expect.objectContaining({ role: 'owner', userId: 'sub-123' }),
           expect.objectContaining({ role: 'member', userId: 'teammate-1' }),
         ]),
       }),
     );
+    expect(notebooksService.assertNotebookAccess).toHaveBeenCalledWith(
+      'notebook-1',
+      expect.objectContaining({ subject: 'sub-123' }),
+    );
     expect(repository.saveConversation).toHaveBeenCalledTimes(2);
     expect(handler.answerQuestion).toHaveBeenCalledWith({
       documentIds: ['document-1'],
       message: 'hello',
+      notebookId: 'notebook-1',
       ownerUserId: 'sub-123',
     });
     expect(savedConversations[0]).toHaveLength(1);
@@ -102,17 +115,25 @@ describe('AssistantService', () => {
         participants: [{ status: 'active', userId: 'someone-else' }],
       })),
     } as unknown as AssistantConversationsRepository;
-    const service = new AssistantService(repository, {
-      getOrThrow: jest.fn(() => ({
-        answerQuestion: jest.fn(),
-        summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
-      })),
-    } as unknown as AssistantRegistry);
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      createNotebooksService(),
+    );
 
     await expect(async () => {
       for await (const _update of service.streamMessage(
         NOTEBOOK_ASSISTANT_KEY,
-        { conversationId: 'conversation-1', message: 'hello' },
+        {
+          conversationId: 'conversation-1',
+          message: 'hello',
+          notebookId: 'notebook-1',
+        },
         {
           email: 'user@example.com',
           subject: 'sub-123',
@@ -130,20 +151,29 @@ describe('AssistantService', () => {
         assistantKey: 'another-assistant',
         id: 'conversation-1',
         items: [],
+        metadata: { notebookId: 'notebook-1' },
         participants: [{ status: 'active', userId: 'sub-123' }],
       })),
     } as unknown as AssistantConversationsRepository;
-    const service = new AssistantService(repository, {
-      getOrThrow: jest.fn(() => ({
-        answerQuestion: jest.fn(),
-        summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
-      })),
-    } as unknown as AssistantRegistry);
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      createNotebooksService(),
+    );
 
     await expect(async () => {
       for await (const _update of service.streamMessage(
         NOTEBOOK_ASSISTANT_KEY,
-        { conversationId: 'conversation-1', message: 'hello' },
+        {
+          conversationId: 'conversation-1',
+          message: 'hello',
+          notebookId: 'notebook-1',
+        },
         {
           email: 'user@example.com',
           subject: 'sub-123',
@@ -154,4 +184,90 @@ describe('AssistantService', () => {
       }
     }).rejects.toThrow('Conversation belongs to a different assistant.');
   });
+
+  it('rejects continuing a conversation with a different notebook id', async () => {
+    const repository = {
+      findById: jest.fn(async () => ({
+        assistantKey: NOTEBOOK_ASSISTANT_KEY,
+        id: 'conversation-1',
+        items: [],
+        metadata: { notebookId: 'notebook-2' },
+        participants: [{ status: 'active', userId: 'sub-123' }],
+      })),
+    } as unknown as AssistantConversationsRepository;
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      createNotebooksService(),
+    );
+
+    await expect(async () => {
+      for await (const _update of service.streamMessage(
+        NOTEBOOK_ASSISTANT_KEY,
+        {
+          conversationId: 'conversation-1',
+          message: 'hello',
+          notebookId: 'notebook-1',
+        },
+        {
+          email: 'user@example.com',
+          subject: 'sub-123',
+          username: 'user@example.com',
+        },
+      )) {
+        // No-op.
+      }
+    }).rejects.toThrow('Conversation belongs to a different notebook.');
+  });
+
+  it('rejects chat before creating a conversation when notebook access is denied', async () => {
+    const repository = {
+      create: jest.fn(),
+      saveConversation: jest.fn(),
+    } as unknown as AssistantConversationsRepository;
+    const notebooksService = createNotebooksService();
+    jest
+      .mocked(notebooksService.assertNotebookAccess)
+      .mockRejectedValue(new Error('Notebook was not found.'));
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      notebooksService,
+    );
+
+    await expect(async () => {
+      for await (const _update of service.streamMessage(
+        NOTEBOOK_ASSISTANT_KEY,
+        {
+          message: 'hello',
+          notebookId: 'notebook-1',
+        },
+        {
+          email: 'user@example.com',
+          subject: 'sub-123',
+          username: 'user@example.com',
+        },
+      )) {
+        // No-op.
+      }
+    }).rejects.toThrow('Notebook was not found.');
+    expect(repository.create).not.toHaveBeenCalled();
+    expect(repository.saveConversation).not.toHaveBeenCalled();
+  });
 });
+
+function createNotebooksService() {
+  return {
+    assertNotebookAccess: jest.fn(async () => undefined),
+  } as unknown as jest.Mocked<NotebooksService>;
+}

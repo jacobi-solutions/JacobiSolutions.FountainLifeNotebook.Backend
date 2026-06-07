@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { KnowledgeBaseService } from '../../knowledge-base/knowledge-base.service';
 import { Citation } from '../data-contracts/citation';
 import { LlmProviderService } from './llm-provider.service';
 import { NotebookRetrievalService } from './notebook-retrieval.service';
@@ -13,10 +14,30 @@ export class NotebookAgentService {
   constructor(
     private readonly retrievalService: NotebookRetrievalService,
     private readonly llmProvider: LlmProviderService,
+    private readonly knowledgeBaseService: KnowledgeBaseService,
   ) {}
 
-  async answerQuestion(question: string, ownerUserId: string, documentIds?: string[]): Promise<NotebookAgentAnswer> {
-    const chunks = await this.retrievalService.retrieve(question, ownerUserId, documentIds);
+  async answerQuestion(
+    question: string,
+    ownerUserId: string,
+    notebookId: string,
+    documentIds?: string[],
+  ): Promise<NotebookAgentAnswer> {
+    if (this.knowledgeBaseService.isBedrockKnowledgeBaseEnabled) {
+      return this.knowledgeBaseService.answerQuestion({
+        documentIds,
+        message: question,
+        notebookId,
+        ownerUserId,
+      });
+    }
+
+    const chunks = await this.retrievalService.retrieve(
+      question,
+      ownerUserId,
+      notebookId,
+      documentIds,
+    );
     if (chunks.length === 0) {
       return {
         answer:

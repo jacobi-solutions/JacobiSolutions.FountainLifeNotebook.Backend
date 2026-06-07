@@ -39,15 +39,20 @@ export interface RetrievedNotebookChunk {
 export class NotebookRetrievalService {
   constructor(private readonly chunksRepository: DocumentChunksRepository) {}
 
-  async retrieve(question: string, ownerUserId: string, documentIds?: string[]): Promise<RetrievedNotebookChunk[]> {
+  async retrieve(
+    question: string,
+    _ownerUserId: string,
+    notebookId: string,
+    documentIds?: string[],
+  ): Promise<RetrievedNotebookChunk[]> {
     const queryTokens = tokenize(question);
     if (queryTokens.length === 0) {
       return [];
     }
 
     const selectedDocumentIds = normalizeDocumentIds(documentIds);
-    const chunks = await this.chunksRepository.findByOwnerAndDocumentIds(
-      ownerUserId,
+    const chunks = await this.chunksRepository.findByNotebookAndDocumentIds(
+      notebookId,
       selectedDocumentIds.length > 0 ? selectedDocumentIds : undefined,
     );
 

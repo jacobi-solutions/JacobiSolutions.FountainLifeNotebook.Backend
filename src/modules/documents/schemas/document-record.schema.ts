@@ -11,6 +11,9 @@ export class DocumentRecord extends BaseModel {
   @Prop({ required: true })
   ownerUserId!: string;
 
+  @Prop({ index: true, required: true })
+  notebookId!: string;
+
   @Prop({ required: true })
   originalFileName!: string;
 
@@ -22,6 +25,9 @@ export class DocumentRecord extends BaseModel {
 
   @Prop({ required: true })
   storageKey!: string;
+
+  @Prop()
+  storageUri?: string;
 
   @Prop({
     default: 'ready',
@@ -36,8 +42,12 @@ export class DocumentRecord extends BaseModel {
 
   @Prop()
   textPreview?: string;
+
+  @Prop()
+  knowledgeBaseStatusReason?: string;
 }
 
 export const DocumentRecordSchema =
   SchemaFactory.createForClass(DocumentRecord);
 DocumentRecordSchema.index({ ownerUserId: 1, lastUpdatedDateUtc: -1 });
+DocumentRecordSchema.index({ ownerUserId: 1, notebookId: 1, lastUpdatedDateUtc: -1 });

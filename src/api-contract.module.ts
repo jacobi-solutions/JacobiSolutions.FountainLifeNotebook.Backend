@@ -8,9 +8,11 @@ import { AssistantService } from './modules/assistants/assistant.service';
 import { DocumentsService } from './modules/documents/documents.service';
 import { McpController } from './modules/mcp/mcp.controller';
 import { McpToolRegistry } from './modules/mcp/mcp-tool-registry';
+import { NotebooksController } from './modules/notebooks/notebooks.controller';
+import { NotebooksService } from './modules/notebooks/notebooks.service';
 
 @Module({
-  controllers: [AccountsController, AssistantController, DocumentsController, HealthController, McpController],
+  controllers: [AccountsController, AssistantController, DocumentsController, HealthController, McpController, NotebooksController],
   providers: [
     {
       provide: AssistantService,
@@ -40,6 +42,20 @@ import { McpToolRegistry } from './modules/mcp/mcp-tool-registry';
         deleteDocument: () => null,
         listDocuments: () => [],
         uploadDocument: () => null,
+        viewDocument: () => null,
+      },
+    },
+    {
+      provide: NotebooksService,
+      useValue: {
+        assertNotebookAccess: () => null,
+        assertNotebookDocumentManageAccess: () => null,
+        assertNotebookWriteAccess: () => null,
+        createNotebook: () => null,
+        deleteNotebook: () => null,
+        inviteNotebookMember: () => null,
+        listNotebooks: () => [],
+        updateNotebook: () => null,
       },
     },
   ],

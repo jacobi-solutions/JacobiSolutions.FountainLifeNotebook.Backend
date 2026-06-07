@@ -23,11 +23,14 @@ describe('LocalDocumentStorageService', () => {
     const stored = await service.storeDocument({
       body: Buffer.from('hello world'),
       contentType: 'text/plain',
+      notebookId: 'notebook/../one',
       originalFileName: 'Notes.TXT',
       ownerUserId: 'user/../one',
     });
 
-    expect(stored.storageKey).toMatch(/^user_.._one\/[a-f0-9-]+\.txt$/);
+    expect(stored.storageKey).toMatch(
+      /^user_.._one\/notebook_.._one\/[a-f0-9-]+\.txt$/,
+    );
     await expect(
       readFile(join(storageRoot, stored.storageKey), 'utf8'),
     ).resolves.toBe('hello world');

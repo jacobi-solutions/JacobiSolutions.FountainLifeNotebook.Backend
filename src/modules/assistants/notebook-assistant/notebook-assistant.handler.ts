@@ -24,6 +24,7 @@ export class NotebookAssistantHandler implements AssistantHandler {
     return this.notebookAgentService.answerQuestion(
       request.message,
       request.ownerUserId,
+      request.notebookId,
       request.documentIds,
     );
   }

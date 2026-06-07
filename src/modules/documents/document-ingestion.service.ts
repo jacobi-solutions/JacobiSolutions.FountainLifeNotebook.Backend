@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { KnowledgeBaseService } from '../knowledge-base/knowledge-base.service';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentChunkingService } from './document-chunking.service';
@@ -21,10 +22,12 @@ export class DocumentIngestionService {
     private readonly storageService: DocumentStorageService,
     private readonly textExtractor: DocumentTextExtractorService,
     private readonly chunkingService: DocumentChunkingService,
+    private readonly knowledgeBaseService: KnowledgeBaseService,
   ) {}
 
   async uploadDocument(
     file: Express.Multer.File | undefined,
+    notebookId: string,
     user: AuthenticatedUser,
   ) {
     if (!file) {
@@ -38,6 +41,7 @@ export class DocumentIngestionService {
     const storedDocument = await this.storageService.storeDocument({
       body: file.buffer,
       contentType: file.mimetype,
+      notebookId,
       originalFileName: file.originalname,
       ownerUserId: user.subject,
     });
@@ -45,6 +49,53 @@ export class DocumentIngestionService {
     let document: DocumentRecordDocument | undefined;
 
     try {
+      if (this.knowledgeBaseService.isBedrockKnowledgeBaseEnabled) {
+        const createdDocument = await this.documentsRepository.create({
+          byteSize: file.size,
+          chunkCount: 0,
+          contentType: file.mimetype,
+          notebookId,
+          originalFileName: file.originalname,
+          ownerUserId: user.subject,
+          status: 'processing',
+          storageKey: storedDocument.storageKey,
+          storageUri: storedDocument.storageUri,
+        });
+        document = createdDocument;
+
+        const fallbackText = storedDocument.storageUri
+          ? undefined
+          : await this.textExtractor.extractText(
+              file.buffer,
+              file.originalname,
+              file.mimetype,
+            );
+        const status = await this.knowledgeBaseService.ingestDocument({
+          contentType: file.mimetype,
+          documentId: createdDocument.id,
+          notebookId,
+          originalFileName: file.originalname,
+          ownerUserId: user.subject,
+          storageUri: storedDocument.storageUri,
+          text: fallbackText,
+        });
+
+        const readyDocument = await this.documentsRepository.updateById(
+          createdDocument.id,
+          {
+            $set: {
+              knowledgeBaseStatusReason: status.statusReason,
+              status: status.status ?? 'processing',
+            },
+          },
+        );
+        if (!readyDocument) {
+          throw new Error('Document was not found after upload.');
+        }
+
+        return readyDocument;
+      }
+
       const text = await this.textExtractor.extractText(
         file.buffer,
         file.originalname,
@@ -55,6 +106,7 @@ export class DocumentIngestionService {
         byteSize: file.size,
         chunkCount: 0,
         contentType: file.mimetype,
+        notebookId,
         originalFileName: file.originalname,
         ownerUserId: user.subject,
         status: 'failed',
@@ -68,6 +120,7 @@ export class DocumentIngestionService {
           chunkIndex: index,
           documentId: createdDocument.id,
           documentName: createdDocument.originalFileName,
+          notebookId,
           ownerUserId: user.subject,
           text: chunkText,
         })),
@@ -91,7 +144,7 @@ export class DocumentIngestionService {
       await this.cleanupFailedUpload(
         storedDocument.storageKey,
         document,
-        user.subject,
+        notebookId,
       );
       throw error;
     }
@@ -100,7 +153,7 @@ export class DocumentIngestionService {
   private async cleanupFailedUpload(
     storageKey: string,
     document: DocumentRecordDocument | undefined,
-    ownerUserId: string,
+    notebookId: string,
   ) {
     const cleanupTasks: Promise<unknown>[] = [
       this.storageService.deleteDocument(storageKey),
@@ -108,11 +161,18 @@ export class DocumentIngestionService {
 
     if (document) {
       cleanupTasks.push(
-        this.chunksRepository.deleteByDocumentIdForOwner(
+        this.knowledgeBaseService.deleteDocument(
           document.id,
-          ownerUserId,
+          document.storageUri,
         ),
-        this.documentsRepository.deleteByIdForOwner(document.id, ownerUserId),
+        this.chunksRepository.deleteByDocumentIdForNotebook(
+          document.id,
+          notebookId,
+        ),
+        this.documentsRepository.deleteByIdForNotebook(
+          document.id,
+          notebookId,
+        ),
       );
     }
 

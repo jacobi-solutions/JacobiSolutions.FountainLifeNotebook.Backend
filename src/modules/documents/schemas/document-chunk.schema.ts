@@ -10,6 +10,9 @@ export class DocumentChunk extends BaseModel {
   ownerUserId!: string;
 
   @Prop({ index: true, required: true })
+  notebookId!: string;
+
+  @Prop({ index: true, required: true })
   documentId!: string;
 
   @Prop({ required: true })
@@ -24,3 +27,4 @@ export class DocumentChunk extends BaseModel {
 
 export const DocumentChunkSchema = SchemaFactory.createForClass(DocumentChunk);
 DocumentChunkSchema.index({ ownerUserId: 1, documentId: 1, chunkIndex: 1 });
+DocumentChunkSchema.index({ ownerUserId: 1, notebookId: 1, documentId: 1, chunkIndex: 1 });

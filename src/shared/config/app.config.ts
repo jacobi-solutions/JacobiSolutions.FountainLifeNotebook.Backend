@@ -8,12 +8,14 @@ const APP_ENVIRONMENTS = ['local', 'test', 'production'] as const;
 const AUTH_MODES = ['cognito', 'local'] as const;
 const DOCUMENT_STORAGE_PROVIDERS = ['local', 's3'] as const;
 const LLM_PROVIDERS = ['mock', 'bedrock'] as const;
+const RETRIEVAL_PROVIDERS = ['local', 'bedrock-kb'] as const;
 
 export type AppEnvironment = (typeof APP_ENVIRONMENTS)[number];
 export type AuthMode = (typeof AUTH_MODES)[number];
 export type DocumentStorageProvider =
   (typeof DOCUMENT_STORAGE_PROVIDERS)[number];
 export type LlmProvider = (typeof LLM_PROVIDERS)[number];
+export type RetrievalProvider = (typeof RETRIEVAL_PROVIDERS)[number];
 
 export interface ApplicationConfig {
   environment: AppEnvironment;
@@ -51,6 +53,13 @@ export interface DocumentStorageConfig {
 export interface LlmConfig {
   llmProvider: LlmProvider;
   bedrockModelId?: string;
+}
+
+export interface RetrievalConfig {
+  retrievalProvider: RetrievalProvider;
+  bedrockDataSourceId?: string;
+  bedrockKnowledgeBaseId?: string;
+  bedrockKnowledgeBaseModelArn?: string;
 }
 
 export interface LoggingConfig {
@@ -140,6 +149,33 @@ export const llmConfig = registerAs('llm', (): LlmConfig => {
   };
 });
 
+export const retrievalConfig = registerAs('retrieval', (): RetrievalConfig => {
+  const retrievalProvider = readEnum(
+    process.env.RETRIEVAL_PROVIDER,
+    RETRIEVAL_PROVIDERS,
+    'local',
+    'RETRIEVAL_PROVIDER',
+  );
+
+  if (retrievalProvider === 'bedrock-kb') {
+    for (const key of [
+      'BEDROCK_KNOWLEDGE_BASE_ID',
+      'BEDROCK_KNOWLEDGE_BASE_DATA_SOURCE_ID',
+    ]) {
+      if (!process.env[key]) {
+        throw new Error(`Missing required configuration: ${key}`);
+      }
+    }
+  }
+
+  return {
+    retrievalProvider,
+    bedrockDataSourceId: process.env.BEDROCK_KNOWLEDGE_BASE_DATA_SOURCE_ID,
+    bedrockKnowledgeBaseId: process.env.BEDROCK_KNOWLEDGE_BASE_ID,
+    bedrockKnowledgeBaseModelArn: process.env.BEDROCK_KNOWLEDGE_BASE_MODEL_ARN,
+  };
+});
+
 export const loggingConfig = registerAs('logging', (): LoggingConfig => ({
   logApplicationName:
     process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
@@ -155,6 +191,7 @@ export const configLoaders = [
   databaseConfig,
   documentStorageConfig,
   llmConfig,
+  retrievalConfig,
   loggingConfig,
 ];
 
@@ -178,6 +215,12 @@ export function validateConfig(config: Record<string, unknown>) {
     'mock',
     'LLM_PROVIDER',
   );
+  const retrievalProvider = readEnum(
+    config.RETRIEVAL_PROVIDER,
+    RETRIEVAL_PROVIDERS,
+    'local',
+    'RETRIEVAL_PROVIDER',
+  );
   normalizeMinimumLogLevel(config.LOG_LEVEL);
   const required = ['MONGODB_DATABASE', 'MONGODB_URI'];
 
@@ -193,6 +236,16 @@ export function validateConfig(config: Record<string, unknown>) {
     required.push('AWS_REGION', 'BEDROCK_MODEL_ID');
   }
 
+  if (retrievalProvider === 'bedrock-kb') {
+    required.push(
+      'AWS_REGION',
+      'BEDROCK_KNOWLEDGE_BASE_DATA_SOURCE_ID',
+      'BEDROCK_KNOWLEDGE_BASE_ID',
+      'BEDROCK_MODEL_ID',
+      'STORAGE_BUCKET_NAME',
+    );
+  }
+
   if (appEnvironment === 'production') {
     if (authMode !== 'cognito') {
       throw new Error('Production requires AUTH_MODE=cognito.');
@@ -204,6 +257,10 @@ export function validateConfig(config: Record<string, unknown>) {
 
     if (llmProvider !== 'bedrock') {
       throw new Error('Production requires LLM_PROVIDER=bedrock.');
+    }
+
+    if (retrievalProvider !== 'bedrock-kb') {
+      throw new Error('Production requires RETRIEVAL_PROVIDER=bedrock-kb.');
     }
   }
 

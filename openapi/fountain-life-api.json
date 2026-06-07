@@ -203,10 +203,14 @@
                   "file": {
                     "format": "binary",
                     "type": "string"
+                  },
+                  "notebookId": {
+                    "type": "string"
                   }
                 },
                 "required": [
-                  "file"
+                  "file",
+                  "notebookId"
                 ],
                 "type": "object"
               }
@@ -383,6 +387,186 @@
         ],
         "tags": [
           "mcp"
+        ]
+      }
+    },
+    "/notebooks/list-notebooks": {
+      "post": {
+        "operationId": "listNotebooks",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListNotebooksRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListNotebooksResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notebooks"
+        ]
+      }
+    },
+    "/notebooks/create-notebook": {
+      "post": {
+        "operationId": "createNotebook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotebookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreateNotebookResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notebooks"
+        ]
+      }
+    },
+    "/notebooks/update-notebook": {
+      "post": {
+        "operationId": "updateNotebook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotebookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateNotebookResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notebooks"
+        ]
+      }
+    },
+    "/notebooks/delete-notebook": {
+      "post": {
+        "operationId": "deleteNotebook",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteNotebookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notebooks"
+        ]
+      }
+    },
+    "/notebooks/invite-notebook-member": {
+      "post": {
+        "operationId": "inviteNotebookMember",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InviteNotebookMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteNotebookMemberResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "notebooks"
         ]
       }
     }
@@ -761,6 +945,9 @@
           "message": {
             "type": "string"
           },
+          "notebookId": {
+            "type": "string"
+          },
           "conversationId": {
             "type": "string"
           },
@@ -778,7 +965,8 @@
           }
         },
         "required": [
-          "message"
+          "message",
+          "notebookId"
         ]
       },
       "AssistantThreadUpdate": {
@@ -870,6 +1058,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "notebookId": {
+            "type": "string"
+          },
           "originalFileName": {
             "type": "string"
           },
@@ -877,10 +1068,14 @@
             "type": "string",
             "enum": [
               "failed",
+              "processing",
               "ready"
             ]
           },
           "textPreview": {
+            "type": "string"
+          },
+          "knowledgeBaseStatusReason": {
             "type": "string"
           }
         },
@@ -891,6 +1086,7 @@
           "createdDateUtc",
           "id",
           "lastUpdatedDateUtc",
+          "notebookId",
           "originalFileName",
           "status"
         ]
@@ -925,8 +1121,14 @@
         "properties": {
           "correlationId": {
             "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
           }
-        }
+        },
+        "required": [
+          "notebookId"
+        ]
       },
       "ListDocumentsResponse": {
         "type": "object",
@@ -964,10 +1166,14 @@
           },
           "documentId": {
             "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
           }
         },
         "required": [
-          "documentId"
+          "documentId",
+          "notebookId"
         ]
       },
       "DocumentContentSection": {
@@ -1008,6 +1214,9 @@
             "format": "date-time",
             "type": "string"
           },
+          "notebookId": {
+            "type": "string"
+          },
           "originalFileName": {
             "type": "string"
           },
@@ -1015,10 +1224,14 @@
             "type": "string",
             "enum": [
               "failed",
+              "processing",
               "ready"
             ]
           },
           "textPreview": {
+            "type": "string"
+          },
+          "knowledgeBaseStatusReason": {
             "type": "string"
           },
           "chunks": {
@@ -1035,6 +1248,7 @@
           "createdDateUtc",
           "id",
           "lastUpdatedDateUtc",
+          "notebookId",
           "originalFileName",
           "status",
           "chunks"
@@ -1073,10 +1287,14 @@
           },
           "documentId": {
             "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
           }
         },
         "required": [
-          "documentId"
+          "documentId",
+          "notebookId"
         ]
       },
       "BaseResponse": {
@@ -1098,6 +1316,288 @@
         "required": [
           "errors",
           "isSuccess"
+        ]
+      },
+      "ListNotebooksRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          }
+        }
+      },
+      "NotebookMemberSummary": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "clinician",
+              "patient",
+              "viewer"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "invited"
+            ]
+          },
+          "userId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "status"
+        ]
+      },
+      "NotebookSummary": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string"
+          },
+          "createdDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "members": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotebookMemberSummary"
+            }
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "clinician",
+              "patient",
+              "viewer"
+            ]
+          },
+          "lastUpdatedDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "sourceCount": {
+            "type": "number"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "createdDateUtc",
+          "description",
+          "id",
+          "members",
+          "role",
+          "lastUpdatedDateUtc",
+          "sourceCount",
+          "title"
+        ]
+      },
+      "ListNotebooksResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "notebooks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotebookSummary"
+            }
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess",
+          "notebooks"
+        ]
+      },
+      "CreateNotebookRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        }
+      },
+      "CreateNotebookResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "notebook": {
+            "$ref": "#/components/schemas/NotebookSummary"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess",
+          "notebook"
+        ]
+      },
+      "UpdateNotebookRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebookId"
+        ]
+      },
+      "UpdateNotebookResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "notebook": {
+            "$ref": "#/components/schemas/NotebookSummary"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess",
+          "notebook"
+        ]
+      },
+      "DeleteNotebookRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebookId"
+        ]
+      },
+      "InviteNotebookMemberRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "owner",
+              "clinician",
+              "patient",
+              "viewer"
+            ]
+          }
+        },
+        "required": [
+          "email",
+          "notebookId",
+          "role"
+        ]
+      },
+      "InviteNotebookMemberResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "inviteDelivery": {
+            "type": "string"
+          },
+          "notebook": {
+            "$ref": "#/components/schemas/NotebookSummary"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess",
+          "inviteDelivery",
+          "notebook"
         ]
       }
     }

@@ -14,6 +14,7 @@ export interface AssistantAnswer {
 export interface AssistantQuestionRequest {
   documentIds?: string[];
   message: string;
+  notebookId: string;
   ownerUserId: string;
 }
 

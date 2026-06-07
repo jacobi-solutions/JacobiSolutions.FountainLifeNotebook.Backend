@@ -90,3 +90,8 @@ export class AssistantConversation extends BaseModel {
 export const AssistantConversationSchema = SchemaFactory.createForClass(AssistantConversation);
 AssistantConversationSchema.index({ 'participants.userId': 1, lastUpdatedDateUtc: -1 });
 AssistantConversationSchema.index({ assistantKey: 1, lastUpdatedDateUtc: -1 });
+AssistantConversationSchema.index({
+  assistantKey: 1,
+  'metadata.notebookId': 1,
+  lastUpdatedDateUtc: -1,
+});

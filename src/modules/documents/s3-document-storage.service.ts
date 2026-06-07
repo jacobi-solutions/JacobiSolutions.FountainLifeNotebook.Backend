@@ -1,4 +1,6 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type { DocumentStorageConfig } from '../../shared/config/app.config';
 import { StorageService } from '../aws/storage.service';
 import {
   DocumentStorageService,
@@ -9,8 +11,16 @@ import { createDocumentStorageKey } from './document-storage-key';
 
 @Injectable()
 export class S3DocumentStorageService extends DocumentStorageService {
-  constructor(private readonly storageService: StorageService) {
+  private readonly bucketName?: string;
+
+  constructor(
+    configService: ConfigService,
+    private readonly storageService: StorageService,
+  ) {
     super();
+    const config =
+      configService.getOrThrow<DocumentStorageConfig>('documentStorage');
+    this.bucketName = config.storageBucketName;
   }
 
   async storeDocument(
@@ -18,6 +28,7 @@ export class S3DocumentStorageService extends DocumentStorageService {
   ): Promise<StoredDocumentObject> {
     const storageKey = createDocumentStorageKey(
       request.ownerUserId,
+      request.notebookId,
       request.originalFileName,
     );
 
@@ -27,7 +38,12 @@ export class S3DocumentStorageService extends DocumentStorageService {
       key: storageKey,
     });
 
-    return { storageKey };
+    return {
+      storageKey,
+      storageUri: this.bucketName
+        ? `s3://${this.bucketName}/${storageKey}`
+        : undefined,
+    };
   }
 
   async deleteDocument(storageKey: string): Promise<void> {

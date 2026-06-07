@@ -8,6 +8,11 @@ export class SendAssistantMessageRequest extends BaseRequest {
   @IsNotEmpty()
   message!: string;
 
+  @ApiProperty()
+  @IsString()
+  @IsNotEmpty()
+  notebookId!: string;
+
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()

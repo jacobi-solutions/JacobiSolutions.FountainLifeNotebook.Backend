@@ -53,19 +53,33 @@ export class DocumentsController {
           format: 'binary',
           type: 'string',
         },
+        notebookId: {
+          type: 'string',
+        },
       },
-      required: ['file'],
+      required: ['file', 'notebookId'],
       type: 'object',
     },
   })
   @ApiOkResponse({ type: UploadDocumentResponse })
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File | undefined,
+    @Body('notebookId') notebookId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
+    if (!notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
+
     return ResponseFactory.successWith(
-      { document: await this.documentsService.uploadDocument(file, user) },
+      { document: await this.documentsService.uploadDocument(file, notebookId, user) },
       correlationId,
     );
   }
@@ -74,12 +88,22 @@ export class DocumentsController {
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ListDocumentsResponse })
   async listDocuments(
-    @Body() _request: ListDocumentsRequest,
+    @Body() request: ListDocumentsRequest,
     @CurrentUser() user: AuthenticatedUser,
     @CorrelationId() correlationId?: string,
   ) {
+    if (!request.notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
+
     return ResponseFactory.successWith(
-      { documents: await this.documentsService.listDocuments(user) },
+      { documents: await this.documentsService.listDocuments(request.notebookId, user) },
       correlationId,
     );
   }
@@ -101,11 +125,21 @@ export class DocumentsController {
         correlationId,
       );
     }
+    if (!request.notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
 
     return ResponseFactory.successWith(
       {
         document: await this.documentsService.viewDocument(
           request.documentId,
+          request.notebookId,
           user,
         ),
       },
@@ -130,8 +164,21 @@ export class DocumentsController {
         correlationId,
       );
     }
+    if (!request.notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
 
-    await this.documentsService.deleteDocument(request.documentId, user);
+    await this.documentsService.deleteDocument(
+      request.documentId,
+      request.notebookId,
+      user,
+    );
 
     return ResponseFactory.success(correlationId);
   }

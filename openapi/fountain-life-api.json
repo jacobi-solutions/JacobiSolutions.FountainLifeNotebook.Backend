@@ -271,6 +271,42 @@
         ]
       }
     },
+    "/documents/view-document": {
+      "post": {
+        "operationId": "viewDocument",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ViewDocumentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ViewDocumentResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "documents"
+        ]
+      }
+    },
     "/documents/delete-document": {
       "post": {
         "operationId": "deleteDocument",
@@ -918,6 +954,115 @@
           "errors",
           "isSuccess",
           "documents"
+        ]
+      },
+      "ViewDocumentRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "documentId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "documentId"
+        ]
+      },
+      "DocumentContentSection": {
+        "type": "object",
+        "properties": {
+          "chunkIndex": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunkIndex",
+          "text"
+        ]
+      },
+      "DocumentDetail": {
+        "type": "object",
+        "properties": {
+          "byteSize": {
+            "type": "number"
+          },
+          "chunkCount": {
+            "type": "number"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "createdDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "lastUpdatedDateUtc": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "originalFileName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "failed",
+              "ready"
+            ]
+          },
+          "textPreview": {
+            "type": "string"
+          },
+          "chunks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DocumentContentSection"
+            }
+          }
+        },
+        "required": [
+          "byteSize",
+          "chunkCount",
+          "contentType",
+          "createdDateUtc",
+          "id",
+          "lastUpdatedDateUtc",
+          "originalFileName",
+          "status",
+          "chunks"
+        ]
+      },
+      "ViewDocumentResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "document": {
+            "$ref": "#/components/schemas/DocumentDetail"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess",
+          "document"
         ]
       },
       "DeleteDocumentRequest": {

@@ -3,6 +3,7 @@ import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentChunksRepository } from './document-chunks.repository';
 import { DocumentIngestionService } from './document-ingestion.service';
 import { DocumentStorageService } from './document-storage.service';
+import { DocumentDetail } from './data-contracts/document-detail';
 import { DocumentSummary } from './data-contracts/document-summary';
 import { DocumentsRepository } from './documents.repository';
 import {
@@ -34,7 +35,36 @@ export class DocumentsService {
     );
   }
 
-  async deleteDocument(documentId: string, user: AuthenticatedUser): Promise<void> {
+  async viewDocument(
+    documentId: string,
+    user: AuthenticatedUser,
+  ): Promise<DocumentDetail> {
+    const document = await this.documentsRepository.findByIdForOwner(
+      documentId,
+      user.subject,
+    );
+    if (!document) {
+      throw new NotFoundException('Document was not found.');
+    }
+
+    const chunks = await this.chunksRepository.findByOwnerAndDocumentId(
+      user.subject,
+      documentId,
+    );
+
+    return {
+      ...this.toSummary(document),
+      chunks: chunks.map((chunk) => ({
+        chunkIndex: chunk.chunkIndex,
+        text: chunk.text,
+      })),
+    };
+  }
+
+  async deleteDocument(
+    documentId: string,
+    user: AuthenticatedUser,
+  ): Promise<void> {
     const document = await this.documentsRepository.findByIdForOwner(
       documentId,
       user.subject,
@@ -48,13 +78,12 @@ export class DocumentsService {
       documentId,
       user.subject,
     );
-    await this.documentsRepository.deleteByIdForOwner(
-      documentId,
-      user.subject,
-    );
+    await this.documentsRepository.deleteByIdForOwner(documentId, user.subject);
   }
 
-  toSummary(document: DocumentRecord | DocumentRecordDocument): DocumentSummary {
+  toSummary(
+    document: DocumentRecord | DocumentRecordDocument,
+  ): DocumentSummary {
     return {
       byteSize: document.byteSize,
       chunkCount: document.chunkCount,

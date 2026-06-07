@@ -93,7 +93,11 @@ export class NotebooksRepository extends BaseRepository<
 
     return this.model
       .findOneAndUpdate(
-        { id: input.notebookId, 'members.email': email },
+        {
+          id: input.notebookId,
+          'members.email': email,
+          $or: ownerFilters(input.invitedByUserId),
+        },
         {
           $set: {
             'members.$.invitedByUserId': input.invitedByUserId,
@@ -111,7 +115,10 @@ export class NotebooksRepository extends BaseRepository<
           ? notebook
           : this.model
               .findOneAndUpdate(
-                { id: input.notebookId },
+                {
+                  id: input.notebookId,
+                  $or: ownerFilters(input.invitedByUserId),
+                },
                 {
                   $push: {
                     members: {
@@ -146,4 +153,11 @@ function membershipFilters(user: { email: string | null; subject: string }) {
   }
 
   return filters;
+}
+
+function ownerFilters(ownerUserId: string) {
+  return [
+    { ownerUserId },
+    { members: { $elemMatch: { role: 'owner', userId: ownerUserId } } },
+  ];
 }

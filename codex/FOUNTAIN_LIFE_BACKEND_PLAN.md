@@ -22,5 +22,5 @@ Build a local NotebookLM-style interview app on the copied NestJS backend.
 
 ## Checks
 
-- Run `npm run verify` from `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend`.
-- If request or response DTOs change, run frontend contract generation from `/Users/shanedrye/jacobi/Ramin/fountain-life-notebook.frontend`.
+- Run `npm run verify` from `/Users/shanedrye/jacobi/Ramin/JacobiSolutions.FountainLifeNotebook.Backend`.
+- If request or response DTOs change, run frontend contract generation from `/Users/shanedrye/jacobi/Ramin/jacobi-solutions.fountain-life-notebook.frontend`.

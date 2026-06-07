@@ -18,13 +18,13 @@ Before backend implementation work, read:
 
 1. `/Users/shanedrye/jacobi/codex/ENGINEERING_DELIVERY_WORKFLOW.md`
 2. `/Users/shanedrye/jacobi/Ramin/codex/ENGINEERING_DELIVERY_WORKFLOW.md`
-3. `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend/docs/architecture.md`
+3. `/Users/shanedrye/jacobi/Ramin/JacobiSolutions.FountainLifeNotebook.Backend/docs/architecture.md`
 
 ## Repo Scope
 
 Repository root:
 
-- `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend`
+- `/Users/shanedrye/jacobi/Ramin/JacobiSolutions.FountainLifeNotebook.Backend`
 
 Key areas:
 
@@ -40,7 +40,7 @@ Run from this repo root:
 
 ## Architecture Rules
 
-- Follow `/Users/shanedrye/jacobi/Ramin/FountainLifeNotebook.Backend/docs/architecture.md`.
+- Follow `/Users/shanedrye/jacobi/Ramin/JacobiSolutions.FountainLifeNotebook.Backend/docs/architecture.md`.
 - Keep controllers thin; put business behavior in services.
 - Keep persistence in repositories or persistence-focused providers.
 - Keep configuration fail-fast and document required variables in `.env.example`.
@@ -58,4 +58,4 @@ If an API request or response changes:
 Developer convenience:
 
 - `npm run contract:sync` is available in both sibling repos and runs backend export plus frontend generation.
-- `contract:sync` assumes `FountainLifeNotebook.Backend` and `fountain-life-notebook.frontend` are checked out as sibling folders.
+- `contract:sync` assumes `JacobiSolutions.FountainLifeNotebook.Backend` and `jacobi-solutions.fountain-life-notebook.frontend` are checked out as sibling folders.

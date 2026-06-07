@@ -8,7 +8,7 @@
   "scripts": {
     "build": "nest build",
     "contract:export": "ts-node scripts/export-openapi.ts openapi/fountain-life-api.json",
-    "contract:sync": "npm run contract:export && npm --prefix ../fountain-life-notebook.frontend run contract:generate",
+    "contract:sync": "npm run contract:export && npm --prefix ../jacobi-solutions.fountain-life-notebook.frontend run contract:generate",
     "docker:build": "scripts/build-container.sh",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
     "start": "nest start",

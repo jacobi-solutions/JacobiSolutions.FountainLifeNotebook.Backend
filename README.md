@@ -27,8 +27,8 @@ It assumes the backend and frontend repos are cloned as siblings:
 
 ```text
 Ramin/
-  FountainLifeNotebook.Backend/
-  fountain-life-notebook.frontend/
+  JacobiSolutions.FountainLifeNotebook.Backend/
+  jacobi-solutions.fountain-life-notebook.frontend/
 ```
 
 Start Docker Desktop, then run from this backend repo:
@@ -177,7 +177,7 @@ When request or response shapes change:
 npm run contract:export
 ```
 
-Then regenerate the frontend client from `/Users/shanedrye/jacobi/Ramin/fountain-life-notebook.frontend`:
+Then regenerate the frontend client from `/Users/shanedrye/jacobi/Ramin/jacobi-solutions.fountain-life-notebook.frontend`:
 
 ```bash
 npm run contract:generate
@@ -193,8 +193,8 @@ This assumes the repos are checked out as siblings:
 
 ```text
 Ramin/
-  FountainLifeNotebook.Backend/
-  fountain-life-notebook.frontend/
+  JacobiSolutions.FountainLifeNotebook.Backend/
+  jacobi-solutions.fountain-life-notebook.frontend/
 ```
 
 ## Checks

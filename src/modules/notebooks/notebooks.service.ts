@@ -120,8 +120,12 @@ export class NotebooksService {
       throw new BadRequestException('Invited users must use a non-owner role.');
     }
 
-    const email = normalizeEmail(request.email);
-    const inviteDelivery = await this.invitationService.inviteUserByEmail(email);
+	    const email = normalizeEmail(request.email);
+    if (email && email === normalizeEmail(user.email)) {
+      throw new BadRequestException('Invite a different email address.');
+    }
+
+	    const inviteDelivery = await this.invitationService.inviteUserByEmail(email);
     const notebook = await this.notebooksRepository.addOrUpdateMember({
       email,
       invitedByUserId: user.subject,

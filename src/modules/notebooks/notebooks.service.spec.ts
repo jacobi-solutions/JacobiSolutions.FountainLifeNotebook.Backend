@@ -1,4 +1,4 @@
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { DocumentsService } from '../documents/documents.service';
 import { NotebookInvitationService } from './notebook-invitation.service';
 import { NotebooksRepository } from './notebooks.repository';
@@ -189,6 +189,31 @@ describe('NotebooksService', () => {
         status: 'invited',
       }),
     );
+  });
+
+  it('rejects inviting the current owner email as a different role', async () => {
+    const repository = {
+      findByIdForMember: jest.fn(async () => createNotebook()),
+    } as unknown as NotebooksRepository;
+    const invitationService = {
+      inviteUserByEmail: jest.fn(),
+    } as unknown as NotebookInvitationService;
+    const service = createService({
+      invitationService,
+      notebooksRepository: repository,
+    });
+
+    await expect(
+      service.inviteNotebookMember(
+        {
+          email: ' USER@example.com ',
+          notebookId: 'notebook-1',
+          role: 'viewer',
+        },
+        user,
+      ),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(invitationService.inviteUserByEmail).not.toHaveBeenCalled();
   });
 
   it('allows email-based invited members to access notebooks', async () => {

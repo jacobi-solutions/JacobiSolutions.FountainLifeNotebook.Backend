@@ -56,7 +56,7 @@ export class NotebooksRepository extends BaseRepository<
   ) {
     return this.model
       .findOneAndUpdate(
-        { id: notebookId, ownerUserId },
+        { id: notebookId, $or: ownerFilters(ownerUserId) },
         {
           $set: {
             ...update,

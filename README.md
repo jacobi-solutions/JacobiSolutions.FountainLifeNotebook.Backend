@@ -112,6 +112,35 @@ docker rm fountain-life-notebook-mongo
 
 For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=openai`, and provide the required Cognito, S3, MongoDB, and OpenAI settings. Startup validation fails fast if any production provider is missing.
 
+## AWS Deployment Foundation
+
+The AWS-ready foundation lives in the sibling infra repo:
+
+```text
+../JacobiSolutions.FountainLifeNotebook.Infra
+```
+
+The intended backend deployment path is:
+
+1. GitHub Actions runs `npm run verify`.
+2. GitHub Actions builds this Dockerfile.
+3. The image is pushed to ECR.
+4. ECS Fargate runs the image behind an Application Load Balancer.
+5. CloudFront proxies `/api/*` to the load balancer so the frontend can use `VITE_API_BASE_URL=/api`.
+
+ECS injects normal environment values plus Secrets Manager values:
+
+```bash
+APP_ENV=production
+AUTH_MODE=cognito
+DOCUMENT_STORAGE_PROVIDER=s3
+LLM_PROVIDER=openai
+MONGODB_URI=<Secrets Manager>
+OPENAI_API_KEY=<Secrets Manager>
+```
+
+Use `Deploy Backend` in GitHub Actions only after Terraform has created ECR, ECS, Cognito, S3, Secrets Manager placeholders, and the GitHub OIDC role.
+
 ## Local Logs
 
 Backend logs are written as JSON lines to both the console and the local log file:

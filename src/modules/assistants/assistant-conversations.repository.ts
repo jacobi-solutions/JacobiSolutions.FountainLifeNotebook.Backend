@@ -33,6 +33,45 @@ export class AssistantConversationsRepository extends BaseRepository<
       .exec();
   }
 
+  async findLatestByNotebookForParticipant(
+    assistantKey: string,
+    notebookId: string,
+    userId: string,
+  ) {
+    return this.model
+      .findOne({
+        assistantKey,
+        'metadata.notebookId': notebookId,
+        participants: {
+          $elemMatch: {
+            status: 'active',
+            userId,
+          },
+        },
+      })
+      .sort({ lastUpdatedDateUtc: -1 })
+      .exec();
+  }
+
+  async deleteByNotebookForParticipant(
+    assistantKey: string,
+    notebookId: string,
+    userId: string,
+  ) {
+    return this.model
+      .deleteMany({
+        assistantKey,
+        'metadata.notebookId': notebookId,
+        participants: {
+          $elemMatch: {
+            status: 'active',
+            userId,
+          },
+        },
+      })
+      .exec();
+  }
+
   async saveConversation(conversation: AssistantConversationDocument) {
     conversation.lastUpdatedDateUtc = new Date();
     return conversation.save();

@@ -264,6 +264,109 @@ describe('AssistantService', () => {
     expect(repository.create).not.toHaveBeenCalled();
     expect(repository.saveConversation).not.toHaveBeenCalled();
   });
+
+  it('loads the latest notebook conversation for the active participant', async () => {
+    const conversationDate = new Date('2026-01-01T00:00:00.000Z');
+    const repository = {
+      findLatestByNotebookForParticipant: jest.fn(async () => ({
+        assistantKey: NOTEBOOK_ASSISTANT_KEY,
+        createdDateUtc: conversationDate,
+        id: 'conversation-1',
+        items: [
+          {
+            actorDisplayName: 'user@example.com',
+            actorType: 'user',
+            actorUserId: 'sub-123',
+            createdDateUtc: conversationDate,
+            id: 'message-1',
+            role: 'user',
+            text: 'hello',
+            visibility: 'user',
+          },
+        ],
+        lastUpdatedDateUtc: conversationDate,
+        metadata: { notebookId: 'notebook-1' },
+        participants: [
+          {
+            joinedDateUtc: conversationDate,
+            role: 'owner',
+            status: 'active',
+            userId: 'sub-123',
+          },
+        ],
+      })),
+    } as unknown as AssistantConversationsRepository;
+    const notebooksService = createNotebooksService();
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      notebooksService,
+    );
+
+    const conversation = await service.getNotebookConversation(
+      NOTEBOOK_ASSISTANT_KEY,
+      'notebook-1',
+      {
+        email: 'user@example.com',
+        subject: 'sub-123',
+        username: 'user@example.com',
+      },
+    );
+
+    expect(notebooksService.assertNotebookAccess).toHaveBeenCalledWith(
+      'notebook-1',
+      expect.objectContaining({ subject: 'sub-123' }),
+    );
+    expect(repository.findLatestByNotebookForParticipant).toHaveBeenCalledWith(
+      NOTEBOOK_ASSISTANT_KEY,
+      'notebook-1',
+      'sub-123',
+    );
+    expect(conversation).toEqual(
+      expect.objectContaining({
+        id: 'conversation-1',
+        messages: [expect.objectContaining({ id: 'message-1', text: 'hello' })],
+      }),
+    );
+  });
+
+  it('clears notebook conversations after verifying notebook access', async () => {
+    const repository = {
+      deleteByNotebookForParticipant: jest.fn(async () => ({ deletedCount: 1 })),
+    } as unknown as AssistantConversationsRepository;
+    const notebooksService = createNotebooksService();
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      notebooksService,
+    );
+
+    await service.clearNotebookConversation(NOTEBOOK_ASSISTANT_KEY, 'notebook-1', {
+      email: 'user@example.com',
+      subject: 'sub-123',
+      username: 'user@example.com',
+    });
+
+    expect(notebooksService.assertNotebookAccess).toHaveBeenCalledWith(
+      'notebook-1',
+      expect.objectContaining({ subject: 'sub-123' }),
+    );
+    expect(repository.deleteByNotebookForParticipant).toHaveBeenCalledWith(
+      NOTEBOOK_ASSISTANT_KEY,
+      'notebook-1',
+      'sub-123',
+    );
+  });
 });
 
 function createNotebooksService() {

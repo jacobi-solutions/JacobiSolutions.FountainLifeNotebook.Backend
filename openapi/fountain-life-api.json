@@ -171,6 +171,96 @@
         ]
       }
     },
+    "/assistants/{assistantKey}/get-notebook-conversation": {
+      "post": {
+        "operationId": "getNotebookConversation",
+        "parameters": [
+          {
+            "name": "assistantKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GetNotebookConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GetNotebookConversationResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "assistants"
+        ]
+      }
+    },
+    "/assistants/{assistantKey}/clear-notebook-conversation": {
+      "post": {
+        "operationId": "clearNotebookConversation",
+        "parameters": [
+          {
+            "name": "assistantKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClearNotebookConversationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BaseResponse"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "assistants"
+        ]
+      }
+    },
     "/assistants/{assistantKey}/stream-message": {
       "post": {
         "operationId": "streamAssistantMessage",
@@ -988,6 +1078,79 @@
           "conversation"
         ]
       },
+      "GetNotebookConversationRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebookId"
+        ]
+      },
+      "GetNotebookConversationResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          },
+          "conversation": {
+            "$ref": "#/components/schemas/AssistantConversation"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
+      "ClearNotebookConversationRequest": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "notebookId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "notebookId"
+        ]
+      },
+      "BaseResponse": {
+        "type": "object",
+        "properties": {
+          "correlationId": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ErrorInfo"
+            }
+          },
+          "isSuccess": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "errors",
+          "isSuccess"
+        ]
+      },
       "SendAssistantMessageRequest": {
         "type": "object",
         "properties": {
@@ -1347,27 +1510,6 @@
         "required": [
           "documentId",
           "notebookId"
-        ]
-      },
-      "BaseResponse": {
-        "type": "object",
-        "properties": {
-          "correlationId": {
-            "type": "string"
-          },
-          "errors": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ErrorInfo"
-            }
-          },
-          "isSuccess": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "errors",
-          "isSuccess"
         ]
       },
       "ListNotebooksRequest": {

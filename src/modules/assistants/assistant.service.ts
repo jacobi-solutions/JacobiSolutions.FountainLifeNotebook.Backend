@@ -122,6 +122,38 @@ export class AssistantService {
     return this.toConversation(conversation);
   }
 
+  async getNotebookConversation(
+    assistantKey: string,
+    notebookId: string,
+    user: AuthenticatedUser,
+  ): Promise<AssistantConversationContract | undefined> {
+    this.assistantRegistry.getOrThrow(assistantKey);
+    await this.notebooksService.assertNotebookAccess(notebookId, user);
+
+    const conversation =
+      await this.conversationsRepository.findLatestByNotebookForParticipant(
+        assistantKey,
+        notebookId,
+        user.subject,
+      );
+
+    return conversation ? this.toConversation(conversation) : undefined;
+  }
+
+  async clearNotebookConversation(
+    assistantKey: string,
+    notebookId: string,
+    user: AuthenticatedUser,
+  ) {
+    this.assistantRegistry.getOrThrow(assistantKey);
+    await this.notebooksService.assertNotebookAccess(notebookId, user);
+    await this.conversationsRepository.deleteByNotebookForParticipant(
+      assistantKey,
+      notebookId,
+      user.subject,
+    );
+  }
+
   private async loadOrCreateConversation(
     assistantKey: string,
     request: SendAssistantMessageRequest,

@@ -11,15 +11,19 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
+import { BaseResponse } from '../../shared/data-contracts/base-response';
 import { ResponseFactory } from '../../shared/data-contracts/response-factory';
 import { CorrelationId } from '../../shared/http/correlation-id.decorator';
 import { AuthenticatedUserGuard } from '../auth/authenticated-user.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { AssistantService } from './assistant.service';
+import { ClearNotebookConversationRequest } from './data-contracts/clear-notebook-conversation-request';
 import { AssistantThreadUpdateResponse } from './data-contracts/assistant-thread-update-response';
 import { GetAssistantConversationRequest } from './data-contracts/get-assistant-conversation-request';
 import { GetAssistantConversationResponse } from './data-contracts/get-assistant-conversation-response';
+import { GetNotebookConversationRequest } from './data-contracts/get-notebook-conversation-request';
+import { GetNotebookConversationResponse } from './data-contracts/get-notebook-conversation-response';
 import { ListAssistantsRequest } from './data-contracts/list-assistants-request';
 import { ListAssistantsResponse } from './data-contracts/list-assistants-response';
 import { SendAssistantMessageRequest } from './data-contracts/send-assistant-message-request';
@@ -73,6 +77,65 @@ export class AssistantController {
       },
       correlationId,
     );
+  }
+
+  @Post(':assistantKey/get-notebook-conversation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: GetNotebookConversationResponse })
+  async getNotebookConversation(
+    @Param('assistantKey') assistantKey: string,
+    @Body() request: GetNotebookConversationRequest,
+    @CurrentUser() user: AuthenticatedUser,
+    @CorrelationId() correlationId?: string,
+  ) {
+    if (!request.notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
+
+    return ResponseFactory.successWith(
+      {
+        conversation: await this.assistantService.getNotebookConversation(
+          assistantKey,
+          request.notebookId,
+          user,
+        ),
+      },
+      correlationId,
+    );
+  }
+
+  @Post(':assistantKey/clear-notebook-conversation')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: BaseResponse })
+  async clearNotebookConversation(
+    @Param('assistantKey') assistantKey: string,
+    @Body() request: ClearNotebookConversationRequest,
+    @CurrentUser() user: AuthenticatedUser,
+    @CorrelationId() correlationId?: string,
+  ) {
+    if (!request.notebookId) {
+      return ResponseFactory.failure(
+        {
+          errorCode: 'VALIDATION_ERROR',
+          errorMessage: 'Notebook id is required.',
+        },
+        correlationId,
+      );
+    }
+
+    await this.assistantService.clearNotebookConversation(
+      assistantKey,
+      request.notebookId,
+      user,
+    );
+
+    return ResponseFactory.success(correlationId);
   }
 
   @Post(':assistantKey/stream-message')

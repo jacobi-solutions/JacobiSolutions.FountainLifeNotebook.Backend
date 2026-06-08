@@ -1,201 +1,89 @@
 # Fountain Life Notebook Backend
 
-NestJS API for the Fountain Life interview NotebookLM-style app.
+NestJS API for the Fountain Life Notebook interview app.
 
-## Stack Shape
-
-- HTTP layer: NestJS controllers with Swagger-decorated data contracts and a global `/api` prefix.
-- Runtime modes: local interview mode by default; production requires Cognito auth, S3 document storage, and Bedrock.
-- Auth: local interview mode by default, Cognito JWT mode available with `AUTH_MODE=cognito`.
-- Services: controller orchestration stays thin; business behavior lives in module services.
-- Persistence: Mongoose schemas and repository classes backed by a shared `BaseRepository`.
-- Contracts: OpenAPI is exported to `openapi/fountain-life-api.json` for frontend type generation.
-- Cross-cutting: request correlation middleware, global exception filter, validation pipe, CORS, Helmet, and request/response logging with redaction.
-- Assistant orchestration: `AssistantRegistry` routes assistant keys to handlers, with the notebook handler backed by retrieval plus an LLM provider.
-- Documents: uploads flow through `DocumentIngestionService`; storage can be local or S3 with `DOCUMENT_STORAGE_PROVIDER`.
-- MCP: JSON-RPC style MCP controller and registry expose app tools, starting with assistant discovery.
-- Secrets/storage: AWS Secrets Manager and S3 service wrappers are available, while local storage remains the default for fast development.
-
-Architecture conventions and layer rules are captured in [docs/architecture.md](docs/architecture.md).
-
-## Local Setup
-
-### Option A: One Command With Docker
-
-This is the easiest path for someone who does not want to install MongoDB or Node.js locally.
-It assumes the backend and frontend repos are cloned as siblings:
+This repo is meant to be reviewed with the sibling frontend and infra repos:
 
 ```text
 Ramin/
   JacobiSolutions.FountainLifeNotebook.Backend/
   jacobi-solutions.fountain-life-notebook.frontend/
+  JacobiSolutions.FountainLifeNotebook.Infra/
 ```
 
-Start Docker Desktop, then run from this backend repo:
+## Interview Review Path
+
+For a quick codebase review:
+
+1. Read [docs/architecture.md](docs/architecture.md) for the backend layering
+   rules.
+2. Skim `src/modules/documents`, `src/modules/assistants`, and
+   `src/shared/config`.
+3. Run or inspect the app with the Docker command below.
+4. Run `npm run verify` before judging final readiness.
+
+## Run The Full App Locally
+
+Fastest path, from this backend repo:
 
 ```bash
 docker compose -f docker-compose.local.yml up
 ```
 
-Open the app:
+Open:
 
 ```text
 http://localhost:5173
 ```
 
-API health check:
+Useful URLs:
 
 ```text
-http://localhost:3000/api/health
+Frontend:   http://localhost:5173
+API health: http://localhost:3000/api/health
+API docs:   http://localhost:3000/api/docs
+API base:   http://localhost:3000/api
 ```
 
-Stop the app:
+Stop it:
 
 ```bash
 docker compose -f docker-compose.local.yml down
 ```
 
-Reset local Mongo data and uploaded files:
+Reset local Docker data:
 
 ```bash
 docker compose -f docker-compose.local.yml down -v
 ```
 
-### Option B: VS Code Debugger
+Docker starts MongoDB, this backend, and the sibling frontend. Node.js and
+MongoDB do not need to be installed locally for this path.
 
-Open the workspace file from this backend repo:
+## Manual Backend Run
 
-```text
-FountainLifeNotebook.code-workspace
-```
+Use this if you only want the API.
 
-Then use VS Code's Run and Debug panel:
+Prerequisites:
 
-- `Full Stack: Debug Backend + Frontend` starts Docker Mongo, runs the backend through `npm run start:debug`, starts the frontend through `npm run dev`, and opens Chrome at `http://localhost:5173`.
-- `Backend: Debug API + Docker Mongo` starts Docker Mongo and runs only the backend debugger.
-- `Backend: Debug API` runs only the backend debugger, reads `.env`, and expects the configured Mongo connection to already be available.
-
-The debugger uses the same normal npm scripts you would run in the terminal. Backend breakpoints work in TypeScript controller, service, repository, and agent files.
-
-If Docker fails or you want to use a MongoDB sandbox, copy `.env.example` to `.env`, set `MONGODB_URI` to the sandbox connection string, and run `Backend: Debug API` instead of the Docker Mongo launch profile.
-
-### Option C: Manual Local Development
+- Node.js 22 or newer
+- MongoDB at `mongodb://localhost:27017/fountain-life-notebook`
 
 ```bash
 npm ci
-cp .env.example .env
+test -f .env || cp .env.example .env
 npm run start:dev
 ```
 
-The default `.env.example` uses local auth:
-
-```bash
-AUTH_MODE=local
-DOCUMENT_STORAGE_PROVIDER=local
-MONGODB_URI=mongodb://localhost:27017/fountain-life-notebook
-```
-
-Protected endpoints receive a deterministic local user from `LOCAL_AUTH_*` environment variables or `X-Local-*` request headers. To use Cognito instead, set `AUTH_MODE=cognito` and provide `AWS_REGION`, `COGNITO_CLIENT_ID`, and `COGNITO_USER_POOL_ID`.
-
-For manual local development, start MongoDB first. The simplest Docker-only Mongo command is:
+If you need a quick local MongoDB:
 
 ```bash
 docker run --name fountain-life-notebook-mongo -p 27017:27017 -d mongo:8.0
 ```
 
-When finished:
-
-```bash
-docker stop fountain-life-notebook-mongo
-docker rm fountain-life-notebook-mongo
-```
-
-For a production-shaped configuration, set `APP_ENV=production`, `AUTH_MODE=cognito`, `DOCUMENT_STORAGE_PROVIDER=s3`, `LLM_PROVIDER=bedrock`, and provide the required Cognito, S3, MongoDB, and Bedrock settings. Startup validation fails fast if any production provider is missing.
-
-## AWS Deployment Foundation
-
-The AWS-ready foundation lives in the sibling infra repo:
-
-```text
-../JacobiSolutions.FountainLifeNotebook.Infra
-```
-
-The intended backend deployment path is:
-
-1. GitHub Actions runs `npm run verify`.
-2. GitHub Actions builds this Dockerfile.
-3. The image is pushed to ECR.
-4. ECS Fargate runs the image behind an Application Load Balancer.
-5. CloudFront proxies `/api/*` to the load balancer so the frontend can use `VITE_API_BASE_URL=/api`.
-
-ECS injects normal environment values plus Secrets Manager values:
-
-```bash
-APP_ENV=production
-AUTH_MODE=cognito
-DOCUMENT_STORAGE_PROVIDER=s3
-LLM_PROVIDER=bedrock
-BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
-MONGODB_URI=<Secrets Manager>
-```
-
-Use `Deploy Backend` in GitHub Actions only after Terraform has created ECR, ECS, Cognito, S3, Secrets Manager placeholders, and the GitHub OIDC role.
-
-## Local Logs
-
-Backend logs are written as JSON lines to both the console and the local log file:
-
-```text
-var/logs/backend-YYYY-MM-DD.log
-```
-
-The folder is created automatically at startup. The default minimum level is `Information`, and the default filename rolls daily.
-
-Useful commands:
-
-```bash
-tail -f var/logs/backend-$(date +%F).log
-jq . var/logs/backend-$(date +%F).log
-```
-
-Logging can be configured with:
-
-```bash
-LOG_APPLICATION_NAME=FountainLifeNotebook.Backend
-LOG_DIRECTORY=var/logs
-LOG_FILE_NAME=backend-%DATE%.log
-LOG_LEVEL=Information
-```
-
-`%DATE%` is replaced with the log entry date in `YYYY-MM-DD` format. Use a fixed value such as `backend.log` if daily files are not wanted. Supported levels are `Fatal`, `Error`, `Warning`, `Information`, `Debug`, and `Verbose`.
-
-## Contracts
-
-When request or response shapes change:
-
-```bash
-npm run contract:export
-```
-
-Then regenerate the frontend client from `/Users/shanedrye/jacobi/Ramin/jacobi-solutions.fountain-life-notebook.frontend`:
-
-```bash
-npm run contract:generate
-```
-
-For convenience, either sibling repo can run the full export-and-generate flow:
-
-```bash
-npm run contract:sync
-```
-
-This assumes the repos are checked out as siblings:
-
-```text
-Ramin/
-  JacobiSolutions.FountainLifeNotebook.Backend/
-  jacobi-solutions.fountain-life-notebook.frontend/
-```
+The default `.env.example` uses local auth, local document storage, mock LLM
+responses, and local retrieval. Cognito, S3, and Bedrock are not required for
+local development.
 
 ## Checks
 
@@ -203,4 +91,70 @@ Ramin/
 npm run verify
 ```
 
-This runs the build, unit tests, e2e tests, and OpenAPI export.
+This runs build, unit tests, e2e tests, and OpenAPI export.
+
+Focused commands:
+
+```bash
+npm run build
+npm test
+npm run test:e2e
+npm run contract:export
+```
+
+## API Contracts
+
+OpenAPI is exported to:
+
+```text
+openapi/fountain-life-api.json
+```
+
+When backend request or response shapes change:
+
+```bash
+npm run contract:sync
+```
+
+That exports OpenAPI and regenerates the sibling frontend client. It assumes the
+backend and frontend repos are checked out as siblings with the folder names
+shown above.
+
+## What To Look At
+
+- `src/main.ts`: global `/api` prefix, validation, CORS, Helmet, Swagger.
+- `src/shared/config`: fail-fast typed environment configuration.
+- `src/modules/auth`: local interview auth and Cognito JWT mode.
+- `src/modules/documents`: upload, extraction, storage, and chunk persistence.
+- `src/modules/assistants`: notebook assistant orchestration and streaming.
+- `src/shared/repositories`: Mongo repository conventions.
+
+## Local Defaults
+
+The local path is intentionally self-contained:
+
+```text
+AUTH_MODE=local
+DOCUMENT_STORAGE_PROVIDER=local
+LLM_PROVIDER=mock
+RETRIEVAL_PROVIDER=local
+PORT=3000
+```
+
+For the full list, see [.env.example](.env.example).
+
+## Deployment Context
+
+The deployed backend runs on ECS Fargate behind an ALB, stores documents in S3,
+uses Cognito for auth, reads MongoDB Atlas from Secrets Manager, and uses
+Bedrock/Knowledge Bases for deployed retrieval. Terraform lives in the sibling
+infra repo.
+
+## Troubleshooting
+
+- If Docker startup looks idle, wait for both container `npm ci` installs to
+  finish.
+- If the API cannot connect to Mongo in manual mode, confirm `MONGODB_URI` in
+  `.env`.
+- If frontend types look stale after backend contract work, run
+  `npm run contract:sync`.

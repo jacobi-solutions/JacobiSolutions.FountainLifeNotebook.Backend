@@ -47,6 +47,9 @@ export class Notebook extends BaseModel {
   @Prop({ required: true })
   ownerUserId!: string;
 
+  @Prop({ index: true, required: true })
+  workspaceId!: string;
+
   @Prop({ default: [], type: [NotebookMemberSchema] })
   members!: NotebookMember[];
 
@@ -66,5 +69,6 @@ export class Notebook extends BaseModel {
 
 export const NotebookSchema = SchemaFactory.createForClass(Notebook);
 NotebookSchema.index({ ownerUserId: 1, lastUpdatedDateUtc: -1 });
+NotebookSchema.index({ workspaceId: 1, lastUpdatedDateUtc: -1 });
 NotebookSchema.index({ 'members.userId': 1, lastUpdatedDateUtc: -1 });
 NotebookSchema.index({ 'members.email': 1, lastUpdatedDateUtc: -1 });

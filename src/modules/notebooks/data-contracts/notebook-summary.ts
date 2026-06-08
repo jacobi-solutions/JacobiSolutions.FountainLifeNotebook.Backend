@@ -32,4 +32,7 @@ export class NotebookSummary {
 
   @ApiProperty()
   title!: string;
+
+  @ApiProperty()
+  workspaceId!: string;
 }

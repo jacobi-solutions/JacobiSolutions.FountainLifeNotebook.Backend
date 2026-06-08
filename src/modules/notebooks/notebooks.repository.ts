@@ -21,7 +21,10 @@ export class NotebooksRepository extends BaseRepository<
     super(notebookModel);
   }
 
-  findByIdForMember(notebookId: string, user: { email: string | null; subject: string }) {
+  findByIdForMember(
+    notebookId: string,
+    user: { email: string | null; subject: string },
+  ) {
     return this.model
       .findOne({
         id: notebookId,
@@ -47,6 +50,40 @@ export class NotebooksRepository extends BaseRepository<
       .find({ $or: membershipFilters(user) })
       .sort({ lastUpdatedDateUtc: -1 })
       .exec();
+  }
+
+  findWithoutWorkspaceId() {
+    return this.model
+      .find({
+        $or: [
+          { workspaceId: { $exists: false } },
+          { workspaceId: null },
+          { workspaceId: '' },
+        ],
+      })
+      .exec();
+  }
+
+  async assignWorkspaceId(notebookId: string, workspaceId: string) {
+    const result = await this.model
+      .updateOne(
+        {
+          id: notebookId,
+          $or: [
+            { workspaceId: { $exists: false } },
+            { workspaceId: null },
+            { workspaceId: '' },
+          ],
+        },
+        {
+          $set: {
+            lastUpdatedDateUtc: new Date(),
+            workspaceId,
+          },
+        },
+      )
+      .exec();
+    return result.modifiedCount === 1;
   }
 
   updateByIdForOwner(

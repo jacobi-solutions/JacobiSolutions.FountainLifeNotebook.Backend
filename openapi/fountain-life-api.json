@@ -1397,6 +1397,9 @@
           },
           "title": {
             "type": "string"
+          },
+          "workspaceId": {
+            "type": "string"
           }
         },
         "required": [
@@ -1408,7 +1411,8 @@
           "role",
           "lastUpdatedDateUtc",
           "sourceCount",
-          "title"
+          "title",
+          "workspaceId"
         ]
       },
       "ListNotebooksResponse": {

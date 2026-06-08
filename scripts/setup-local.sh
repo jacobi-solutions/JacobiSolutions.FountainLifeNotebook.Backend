@@ -35,6 +35,7 @@ cat <<'EOF'
 Backend setup complete.
 
 Before starting the app, make sure MongoDB is available at the MONGODB_URI in .env.
+If MongoDB is not at the default URI, edit MONGODB_URI in .env before starting.
 
 Start the backend:
   npm run start:dev

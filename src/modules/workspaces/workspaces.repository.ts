@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseRepository } from '../../shared/repositories/base.repository';
@@ -20,12 +20,12 @@ export class WorkspacesRepository extends BaseRepository<
     super(workspaceModel);
   }
 
-  ensureDefaultWorkspace(input: {
+  async ensureDefaultWorkspace(input: {
     members: WorkspaceMember[];
     name: string;
     ownerUserId: string;
   }) {
-    return this.model
+    const workspace = await this.model
       .findOneAndUpdate(
         { isDefault: true, ownerUserId: input.ownerUserId },
         {
@@ -43,5 +43,13 @@ export class WorkspacesRepository extends BaseRepository<
         { new: true, setDefaultsOnInsert: true, upsert: true },
       )
       .exec();
+
+    if (!workspace) {
+      throw new InternalServerErrorException(
+        'Unable to create or load default workspace.',
+      );
+    }
+
+    return workspace;
   }
 }

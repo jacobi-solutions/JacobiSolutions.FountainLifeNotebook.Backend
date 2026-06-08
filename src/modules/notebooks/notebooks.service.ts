@@ -193,7 +193,7 @@ export class NotebooksService {
       role: getMemberRole(notebook, user) ?? 'viewer',
       sourceCount,
       title: notebook.title,
-      workspaceId: notebook.workspaceId ?? '',
+      workspaceId: notebook.workspaceId,
     };
   }
 

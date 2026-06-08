@@ -4,7 +4,6 @@ import { DocumentsModule } from '../documents/documents.module';
 import { WorkspacesModule } from '../workspaces/workspaces.module';
 import { NotebooksController } from './notebooks.controller';
 import { NotebookInvitationService } from './notebook-invitation.service';
-import { NotebookWorkspaceBackfillService } from './notebook-workspace-backfill.service';
 import { NotebooksRepository } from './notebooks.repository';
 import { NotebooksService } from './notebooks.service';
 import { Notebook, NotebookSchema } from './schemas/notebook.schema';
@@ -20,7 +19,6 @@ import { Notebook, NotebookSchema } from './schemas/notebook.schema';
   controllers: [NotebooksController],
   providers: [
     NotebookInvitationService,
-    NotebookWorkspaceBackfillService,
     NotebooksRepository,
     NotebooksService,
   ],

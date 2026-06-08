@@ -8,6 +8,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import type { App } from 'supertest/types';
+import { AlertcheckController } from '../src/modules/alertcheck/alertcheck.controller';
+import { AlertcheckService } from '../src/modules/alertcheck/alertcheck.service';
 import { AssistantController } from '../src/modules/assistants/assistant.controller';
 import { AssistantService } from '../src/modules/assistants/assistant.service';
 import { NOTEBOOK_ASSISTANT_KEY } from '../src/modules/assistants/notebook-assistant/notebook-assistant.constants';
@@ -29,6 +31,14 @@ describe('Fountain Life Notebook API e2e', () => {
     listAssistants: jest.fn(() => []),
     streamMessage: jest.fn(async function* () {}),
   };
+  const alertcheckService = {
+    triggerTestAlert: jest.fn(() => ({
+      messageId: 'message-123',
+      name: 'fountain-life-notebook-alertcheck',
+      status: 'sent',
+      timestamp: '2026-01-01T00:00:00.000Z',
+    })),
+  };
   const authGuard: CanActivate = {
     canActivate(context: ExecutionContext) {
       const request = context.switchToHttp().getRequest();
@@ -45,8 +55,15 @@ describe('Fountain Life Notebook API e2e', () => {
     jest.clearAllMocks();
 
     const moduleFixture: TestingModule = await Test.createTestingModule({
-      controllers: [AssistantController, HealthController],
-      providers: [{ provide: AssistantService, useValue: assistantService }],
+      controllers: [
+        AlertcheckController,
+        AssistantController,
+        HealthController,
+      ],
+      providers: [
+        { provide: AlertcheckService, useValue: alertcheckService },
+        { provide: AssistantService, useValue: assistantService },
+      ],
     })
       .overrideGuard(AuthenticatedUserGuard)
       .useValue(authGuard)
@@ -90,6 +107,24 @@ describe('Fountain Life Notebook API e2e', () => {
         name: 'fountain-life-notebook-api',
         status: 'ok',
       }),
+    );
+  });
+
+  it('serves alertcheck under the API prefix', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/alertcheck')
+      .expect(200);
+
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        messageId: 'message-123',
+        name: 'fountain-life-notebook-alertcheck',
+        status: 'sent',
+      }),
+    );
+    expect(alertcheckService.triggerTestAlert).toHaveBeenCalledTimes(1);
+    expect(alertcheckService.triggerTestAlert).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'user@example.com' }),
     );
   });
 

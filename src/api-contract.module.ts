@@ -1,5 +1,8 @@
 import { Module } from '@nestjs/common';
 import { AccountsController } from './modules/accounts/accounts.controller';
+import { AlertcheckController } from './modules/alertcheck/alertcheck.controller';
+import { AlertcheckService } from './modules/alertcheck/alertcheck.service';
+import { AlertcheckResponse } from './modules/alertcheck/data-contracts/alertcheck-response';
 import { AssistantController } from './modules/assistants/assistant.controller';
 import { DocumentsController } from './modules/documents/documents.controller';
 import { HealthController } from './modules/health/health.controller';
@@ -12,8 +15,27 @@ import { NotebooksController } from './modules/notebooks/notebooks.controller';
 import { NotebooksService } from './modules/notebooks/notebooks.service';
 
 @Module({
-  controllers: [AccountsController, AssistantController, DocumentsController, HealthController, McpController, NotebooksController],
+  controllers: [
+    AccountsController,
+    AlertcheckController,
+    AssistantController,
+    DocumentsController,
+    HealthController,
+    McpController,
+    NotebooksController,
+  ],
   providers: [
+    {
+      provide: AlertcheckService,
+      useValue: {
+        triggerTestAlert: (): AlertcheckResponse => ({
+          messageId: 'message-id',
+          name: 'fountain-life-notebook-alertcheck',
+          status: 'sent',
+          timestamp: '2026-01-01T00:00:00.000Z',
+        }),
+      },
+    },
     {
       provide: AssistantService,
       useValue: {

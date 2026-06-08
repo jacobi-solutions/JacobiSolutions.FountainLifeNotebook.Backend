@@ -1,15 +1,44 @@
 # Fountain Life Notebook Backend
 
-NestJS API for the Fountain Life Notebook interview app.
+## Project Summary / Repo Layout
 
-This repo is meant to be reviewed with the sibling frontend and infra repos:
+Fountain Life Notebook is an interview project split across three repositories:
+a NestJS backend API, a React Router frontend, and Terraform infrastructure for
+the AWS deployment path. The milestone branches preserve the build-out history.
+
+This backend repo provides the NestJS API for the interview app and is meant to
+be reviewed with the sibling frontend and infra repos:
 
 ```text
-Ramin/
+FountainLifeNotebook/
   JacobiSolutions.FountainLifeNotebook.Backend/
   jacobi-solutions.fountain-life-notebook.frontend/
   JacobiSolutions.FountainLifeNotebook.Infra/
 ```
+
+## Project Map / Milestone Summary
+
+| Milestone | Major idea | Backend | Frontend | Infra |
+| --- | --- | --- | --- | --- |
+| 00 Starter Stack | App shells, local defaults, repo boundaries. | [backend](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Backend/tree/milestone%2F00-starter-stack) | [frontend](https://github.com/jacobi-solutions/jacobi-solutions.fountain-life-notebook.frontend/tree/milestone%2F00-starter-stack) | starts in Milestone 2 |
+| 01 Core Notebook | Local notebook workflow, documents, notebooks, generated contracts, local auth. | [backend](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Backend/tree/milestone%2F01-core-notebook) | [frontend](https://github.com/jacobi-solutions/jacobi-solutions.fountain-life-notebook.frontend/tree/milestone%2F01-core-notebook) | starts in Milestone 2 |
+| 02 AWS Ready Foundation | Cognito, S3/CloudFront, ECS, Secrets Manager, deployment variables. Infra starts here. | [backend](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Backend/tree/milestone%2F02-aws-ready-foundation) | [frontend](https://github.com/jacobi-solutions/jacobi-solutions.fountain-life-notebook.frontend/tree/milestone%2F02-aws-ready-foundation) | [infra](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Infra/tree/milestone%2F02-aws-ready-foundation) |
+| 03 Bedrock KB Notebooks | Bedrock Knowledge Bases, notebook retrieval, notebook/user isolation. | [backend](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Backend/tree/milestone%2F03-bedrock-kb-notebooks) | [frontend](https://github.com/jacobi-solutions/jacobi-solutions.fountain-life-notebook.frontend/tree/milestone%2F03-bedrock-kb-notebooks) | [infra](https://github.com/jacobi-solutions/JacobiSolutions.FountainLifeNotebook.Infra/tree/milestone%2F03-bedrock-kb-notebooks) |
+
+## At A Glance
+
+- Purpose: backend API, auth boundary, document ingestion, persistence,
+  assistant orchestration, and OpenAPI contracts.
+- Running app: [https://d10nrh49pw7gmt.cloudfront.net](https://d10nrh49pw7gmt.cloudfront.net)
+- Fast-track setup: `npm run setup:local`, then `npm run start:dev`.
+- Local dependency: MongoDB at the `MONGODB_URI` in `.env`.
+- Main review areas: `src/modules/documents`, `src/modules/assistants`,
+  `src/modules/knowledge-base`, `src/modules/auth`, and `src/shared/config`.
+- More detail: [run locally](#details-run-locally),
+  [backend only](#details-backend-only), [checks](#details-checks),
+  [contracts](#details-api-contracts), [architecture](#details-what-to-look-at),
+  [deployment context](#details-deployment-context),
+  [supporting docs](#details-supporting-docs).
 
 ## Interview Review Path
 
@@ -19,15 +48,30 @@ For a quick codebase review:
    rules.
 2. Skim `src/modules/documents`, `src/modules/assistants`, and
    `src/shared/config`.
-3. Run or inspect the app with the Docker command below.
+3. Run or inspect the app with the terminal commands below.
 4. Run `npm run verify` before judging final readiness.
 
-## Run The Full App Locally
+## Details: Run Locally
 
-Fastest path, from this backend repo:
+Prerequisites:
+
+- Node.js 22 or newer
+- MongoDB at `mongodb://localhost:27017/fountain-life-notebook`, or another
+  MongoDB URI set in the backend `.env`
+
+Terminal 1, from this backend repo:
 
 ```bash
-docker compose -f docker-compose.local.yml up
+npm run setup:local
+npm run start:dev
+```
+
+Terminal 2, from the sibling frontend repo:
+
+```bash
+cd ../jacobi-solutions.fountain-life-notebook.frontend
+npm run setup:local
+npm run dev
 ```
 
 Open:
@@ -45,22 +89,16 @@ API docs:   http://localhost:3000/api/docs
 API base:   http://localhost:3000/api
 ```
 
-Stop it:
+The setup script is only a shortcut for normal local setup. The manual
+equivalent is:
 
 ```bash
-docker compose -f docker-compose.local.yml down
+npm ci
+test -f .env || cp .env.example .env
+mkdir -p var/uploads var/logs openapi
 ```
 
-Reset local Docker data:
-
-```bash
-docker compose -f docker-compose.local.yml down -v
-```
-
-Docker starts MongoDB, this backend, and the sibling frontend. Node.js and
-MongoDB do not need to be installed locally for this path.
-
-## Manual Backend Run
+## Details: Backend Only
 
 Use this if you only want the API.
 
@@ -70,22 +108,28 @@ Prerequisites:
 - MongoDB at `mongodb://localhost:27017/fountain-life-notebook`
 
 ```bash
-npm ci
-test -f .env || cp .env.example .env
+npm run setup:local
 npm run start:dev
-```
-
-If you need a quick local MongoDB:
-
-```bash
-docker run --name fountain-life-notebook-mongo -p 27017:27017 -d mongo:8.0
 ```
 
 The default `.env.example` uses local auth, local document storage, mock LLM
 responses, and local retrieval. Cognito, S3, and Bedrock are not required for
 local development.
 
-## Checks
+## Details: Optional Docker
+
+This repo includes `docker-compose.local.yml` for a containerized local stack,
+and the deployed app is built around containerized backend infrastructure. The
+Compose path has not been the primary verified local interview workflow, so we
+recommend the terminal setup above.
+
+If you want to try it from this backend repo:
+
+```bash
+docker compose -f docker-compose.local.yml up
+```
+
+## Details: Checks
 
 ```bash
 npm run verify
@@ -102,7 +146,7 @@ npm run test:e2e
 npm run contract:export
 ```
 
-## API Contracts
+## Details: API Contracts
 
 OpenAPI is exported to:
 
@@ -120,16 +164,19 @@ That exports OpenAPI and regenerates the sibling frontend client. It assumes the
 backend and frontend repos are checked out as siblings with the folder names
 shown above.
 
-## What To Look At
+## Details: What To Look At
 
 - `src/main.ts`: global `/api` prefix, validation, CORS, Helmet, Swagger.
 - `src/shared/config`: fail-fast typed environment configuration.
 - `src/modules/auth`: local interview auth and Cognito JWT mode.
-- `src/modules/documents`: upload, extraction, storage, and chunk persistence.
+- `src/modules/documents`: upload, extraction, document viewing, storage, and
+  chunk persistence.
 - `src/modules/assistants`: notebook assistant orchestration and streaming.
+- `src/modules/knowledge-base`: Bedrock Knowledge Base ingestion and retrieval
+  integration.
 - `src/shared/repositories`: Mongo repository conventions.
 
-## Local Defaults
+## Details: Local Defaults
 
 The local path is intentionally self-contained:
 
@@ -143,17 +190,24 @@ PORT=3000
 
 For the full list, see [.env.example](.env.example).
 
-## Deployment Context
+## Details: Deployment Context
 
 The deployed backend runs on ECS Fargate behind an ALB, stores documents in S3,
 uses Cognito for auth, reads MongoDB Atlas from Secrets Manager, and uses
-Bedrock/Knowledge Bases for deployed retrieval. Terraform lives in the sibling
-infra repo.
+Bedrock/Knowledge Bases for deployed retrieval. The running frontend is
+[https://d10nrh49pw7gmt.cloudfront.net](https://d10nrh49pw7gmt.cloudfront.net).
+Terraform lives in the sibling infra repo.
 
-## Troubleshooting
+## Details: Supporting Docs
 
-- If Docker startup looks idle, wait for both container `npm ci` installs to
-  finish.
+- [Architecture decisions](docs/ARCHITECTURE_DECISIONS.md)
+- [Feature ideas](docs/FEATURE_IDEAS.md)
+- [Technical debt](docs/TECH_DEBT.md)
+- [Engineering workflow](CONTRIBUTING.md)
+- [Backend architecture](docs/architecture.md)
+
+## Details: Troubleshooting
+
 - If the API cannot connect to Mongo in manual mode, confirm `MONGODB_URI` in
   `.env`.
 - If frontend types look stale after backend contract work, run

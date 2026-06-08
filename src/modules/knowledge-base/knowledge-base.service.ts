@@ -24,9 +24,9 @@ export interface KnowledgeBaseDocumentMetadata {
   ownerUserId: string;
 }
 
-export interface IngestKnowledgeBaseDocumentRequest
-  extends KnowledgeBaseDocumentMetadata {
+export interface IngestKnowledgeBaseDocumentRequest extends KnowledgeBaseDocumentMetadata {
   contentType: string;
+  metadataStorageUri?: string;
   originalFileName: string;
   storageUri?: string;
   text?: string;
@@ -87,15 +87,7 @@ export class KnowledgeBaseService {
         documents: [
           {
             content: this.createDocumentContent(request),
-            metadata: {
-              inlineAttributes: [
-                createStringMetadata('ownerUserId', request.ownerUserId),
-                createStringMetadata('notebookId', request.notebookId),
-                createStringMetadata('documentId', request.documentId),
-                createStringMetadata('originalFileName', request.originalFileName),
-              ],
-              type: 'IN_LINE_ATTRIBUTE',
-            },
+            metadata: this.createDocumentMetadata(request),
           },
         ],
         knowledgeBaseId: this.requireKnowledgeBaseId(),
@@ -137,7 +129,9 @@ export class KnowledgeBaseService {
     await this.agentClient.send(
       new DeleteKnowledgeBaseDocumentsCommand({
         dataSourceId: this.requireDataSourceId(),
-        documentIdentifiers: [this.createDocumentIdentifier(documentId, storageUri)],
+        documentIdentifiers: [
+          this.createDocumentIdentifier(documentId, storageUri),
+        ],
         knowledgeBaseId: this.requireKnowledgeBaseId(),
       }),
     );
@@ -239,9 +233,38 @@ export class KnowledgeBaseService {
         };
   }
 
+  private createDocumentMetadata(request: IngestKnowledgeBaseDocumentRequest) {
+    if (request.storageUri) {
+      if (!request.metadataStorageUri) {
+        throw new Error(
+          'Knowledge Base S3 ingestion requires S3 metadata URI.',
+        );
+      }
+
+      return {
+        s3Location: {
+          uri: request.metadataStorageUri,
+        },
+        type: 'S3_LOCATION' as const,
+      };
+    }
+
+    return {
+      inlineAttributes: [
+        createStringMetadata('ownerUserId', request.ownerUserId),
+        createStringMetadata('notebookId', request.notebookId),
+        createStringMetadata('documentId', request.documentId),
+        createStringMetadata('originalFileName', request.originalFileName),
+      ],
+      type: 'IN_LINE_ATTRIBUTE' as const,
+    };
+  }
+
   private requireDataSourceId() {
     if (!this.retrievalConfig.bedrockDataSourceId) {
-      throw new Error('Missing required configuration: BEDROCK_KNOWLEDGE_BASE_DATA_SOURCE_ID');
+      throw new Error(
+        'Missing required configuration: BEDROCK_KNOWLEDGE_BASE_DATA_SOURCE_ID',
+      );
     }
 
     return this.retrievalConfig.bedrockDataSourceId;
@@ -249,7 +272,9 @@ export class KnowledgeBaseService {
 
   private requireKnowledgeBaseId() {
     if (!this.retrievalConfig.bedrockKnowledgeBaseId) {
-      throw new Error('Missing required configuration: BEDROCK_KNOWLEDGE_BASE_ID');
+      throw new Error(
+        'Missing required configuration: BEDROCK_KNOWLEDGE_BASE_ID',
+      );
     }
 
     return this.retrievalConfig.bedrockKnowledgeBaseId;
@@ -299,7 +324,11 @@ function buildKnowledgeBaseFilter(request: {
   notebookId: string;
 }): RetrievalFilter {
   const documentIds = Array.from(
-    new Set((request.documentIds ?? []).map((documentId) => documentId.trim()).filter(Boolean)),
+    new Set(
+      (request.documentIds ?? [])
+        .map((documentId) => documentId.trim())
+        .filter(Boolean),
+    ),
   );
   const filters: RetrievalFilter[] = [
     {
@@ -312,12 +341,14 @@ function buildKnowledgeBaseFilter(request: {
 
   if (documentIds.length > 0) {
     filters.push({
-      orAll: documentIds.map((documentId): RetrievalFilter => ({
-        equals: {
-          key: 'documentId',
-          value: documentId,
-        },
-      })),
+      orAll: documentIds.map(
+        (documentId): RetrievalFilter => ({
+          equals: {
+            key: 'documentId',
+            value: documentId,
+          },
+        }),
+      ),
     });
   }
 
@@ -335,9 +366,10 @@ function normalizeCitations(citations: unknown): Citation[] {
       continue;
     }
 
-    const retrievedReferences = 'retrievedReferences' in citation
-      ? citation.retrievedReferences
-      : undefined;
+    const retrievedReferences =
+      'retrievedReferences' in citation
+        ? citation.retrievedReferences
+        : undefined;
     if (!Array.isArray(retrievedReferences)) {
       continue;
     }
@@ -352,7 +384,10 @@ function normalizeCitations(citations: unknown): Citation[] {
   return normalizedCitations;
 }
 
-function normalizeReferenceCitation(reference: unknown, index: number): Citation {
+function normalizeReferenceCitation(
+  reference: unknown,
+  index: number,
+): Citation {
   const value =
     typeof reference === 'object' && reference !== null
       ? (reference as Record<string, unknown>)

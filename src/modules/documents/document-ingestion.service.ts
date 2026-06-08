@@ -70,9 +70,22 @@ export class DocumentIngestionService {
               file.originalname,
               file.mimetype,
             );
+        const storedMetadata = storedDocument.storageUri
+          ? await this.storageService.storeDocumentMetadata({
+              body: createBedrockMetadataFile({
+                documentId: createdDocument.id,
+                notebookId,
+                originalFileName: file.originalname,
+                ownerUserId: user.subject,
+              }),
+              contentType: 'application/json',
+              storageKey: storedDocument.storageKey,
+            })
+          : undefined;
         const status = await this.knowledgeBaseService.ingestDocument({
           contentType: file.mimetype,
           documentId: createdDocument.id,
+          metadataStorageUri: storedMetadata?.storageUri,
           notebookId,
           originalFileName: file.originalname,
           ownerUserId: user.subject,
@@ -169,10 +182,7 @@ export class DocumentIngestionService {
           document.id,
           notebookId,
         ),
-        this.documentsRepository.deleteByIdForNotebook(
-          document.id,
-          notebookId,
-        ),
+        this.documentsRepository.deleteByIdForNotebook(document.id, notebookId),
       );
     }
 
@@ -197,4 +207,30 @@ function createTextPreview(text: string) {
   return text.length <= DOCUMENT_TEXT_PREVIEW_LENGTH
     ? text
     : `${text.slice(0, DOCUMENT_TEXT_PREVIEW_LENGTH - 3)}...`;
+}
+
+function createBedrockMetadataFile(metadata: {
+  documentId: string;
+  notebookId: string;
+  originalFileName: string;
+  ownerUserId: string;
+}) {
+  return JSON.stringify({
+    metadataAttributes: {
+      documentId: createBedrockStringMetadata(metadata.documentId),
+      notebookId: createBedrockStringMetadata(metadata.notebookId),
+      originalFileName: createBedrockStringMetadata(metadata.originalFileName),
+      ownerUserId: createBedrockStringMetadata(metadata.ownerUserId),
+    },
+  });
+}
+
+function createBedrockStringMetadata(value: string) {
+  return {
+    includeForEmbedding: false,
+    value: {
+      stringValue: value,
+      type: 'STRING',
+    },
+  };
 }

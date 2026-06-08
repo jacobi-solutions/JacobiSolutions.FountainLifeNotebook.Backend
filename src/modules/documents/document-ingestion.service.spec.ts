@@ -25,6 +25,7 @@ describe('DocumentIngestionService', () => {
     } as unknown as DocumentChunksRepository;
     const storageService = {
       deleteDocument: jest.fn(async () => undefined),
+      storeDocumentMetadata: jest.fn(async () => ({ storageKey: 'metadata' })),
       storeDocument: jest.fn(async () => ({
         storageKey: createdDocument.storageKey,
       })),
@@ -102,17 +103,23 @@ describe('DocumentIngestionService', () => {
     const textExtractor = {
       extractText: jest.fn(async () => 'Extracted text'),
     } as unknown as DocumentTextExtractorService;
+    const storageService = {
+      deleteDocument: jest.fn(),
+      storeDocument: jest.fn(async () => ({
+        storageKey: createdDocument.storageKey,
+        storageUri: 's3://documents/user-1/notebook-1/document-1.txt',
+      })),
+      storeDocumentMetadata: jest.fn(async () => ({
+        storageKey: 'user-1/notebook-1/document-1.txt.metadata.json',
+        storageUri:
+          's3://documents/user-1/notebook-1/document-1.txt.metadata.json',
+      })),
+    } as unknown as DocumentStorageService;
     const service = createService({
       chunksRepository,
       documentsRepository,
       knowledgeBaseService,
-      storageService: {
-        deleteDocument: jest.fn(),
-        storeDocument: jest.fn(async () => ({
-          storageKey: createdDocument.storageKey,
-          storageUri: 's3://documents/user-1/notebook-1/document-1.txt',
-        })),
-      } as unknown as DocumentStorageService,
+      storageService,
       textExtractor,
     });
 
@@ -122,9 +129,23 @@ describe('DocumentIngestionService', () => {
 
     expect(chunksRepository.createMany).not.toHaveBeenCalled();
     expect(textExtractor.extractText).not.toHaveBeenCalled();
+    expect(storageService.storeDocumentMetadata).toHaveBeenCalledWith({
+      body: JSON.stringify({
+        metadataAttributes: {
+          documentId: bedrockMetadataValue('document-1'),
+          notebookId: bedrockMetadataValue('notebook-1'),
+          originalFileName: bedrockMetadataValue('notes.txt'),
+          ownerUserId: bedrockMetadataValue('user-1'),
+        },
+      }),
+      contentType: 'application/json',
+      storageKey: 'user-1/notebook-1/document-1.txt',
+    });
     expect(knowledgeBaseService.ingestDocument).toHaveBeenCalledWith(
       expect.objectContaining({
         documentId: 'document-1',
+        metadataStorageUri:
+          's3://documents/user-1/notebook-1/document-1.txt.metadata.json',
         notebookId: 'notebook-1',
         ownerUserId: 'user-1',
         storageUri: 's3://documents/user-1/notebook-1/document-1.txt',
@@ -154,6 +175,7 @@ describe('DocumentIngestionService', () => {
       knowledgeBaseService,
       storageService: {
         deleteDocument: jest.fn(),
+        storeDocumentMetadata: jest.fn(),
         storeDocument: jest.fn(async () => ({
           storageKey: createdDocument.storageKey,
         })),
@@ -172,6 +194,7 @@ describe('DocumentIngestionService', () => {
     );
     expect(knowledgeBaseService.ingestDocument).toHaveBeenCalledWith(
       expect.objectContaining({
+        metadataStorageUri: undefined,
         storageUri: undefined,
         text: 'Extracted source text',
       }),
@@ -192,6 +215,7 @@ describe('DocumentIngestionService', () => {
     } as unknown as DocumentChunksRepository;
     const storageService = {
       deleteDocument: jest.fn(async () => undefined),
+      storeDocumentMetadata: jest.fn(async () => ({ storageKey: 'metadata' })),
       storeDocument: jest.fn(async () => ({ storageKey: document.storageKey })),
     } as unknown as DocumentStorageService;
     const knowledgeBaseService = {
@@ -271,19 +295,22 @@ function createDocument(overrides: Record<string, unknown> = {}) {
   };
 }
 
-function createService(overrides: {
-  chunksRepository?: DocumentChunksRepository;
-  documentsRepository?: DocumentsRepository;
-  knowledgeBaseService?: KnowledgeBaseService;
-  storageService?: DocumentStorageService;
-  textExtractor?: DocumentTextExtractorService;
-} = {}) {
+function createService(
+  overrides: {
+    chunksRepository?: DocumentChunksRepository;
+    documentsRepository?: DocumentsRepository;
+    knowledgeBaseService?: KnowledgeBaseService;
+    storageService?: DocumentStorageService;
+    textExtractor?: DocumentTextExtractorService;
+  } = {},
+) {
   return new DocumentIngestionService(
     overrides.documentsRepository ?? ({} as DocumentsRepository),
     overrides.chunksRepository ?? ({} as DocumentChunksRepository),
     overrides.storageService ??
       ({
         deleteDocument: jest.fn(),
+        storeDocumentMetadata: jest.fn(),
         storeDocument: jest.fn(),
       } as unknown as DocumentStorageService),
     overrides.textExtractor ??
@@ -309,4 +336,14 @@ function file(text: string) {
     originalname: 'notes.txt',
     size: Buffer.byteLength(text),
   } as Express.Multer.File;
+}
+
+function bedrockMetadataValue(value: string) {
+  return {
+    includeForEmbedding: false,
+    value: {
+      stringValue: value,
+      type: 'STRING',
+    },
+  };
 }

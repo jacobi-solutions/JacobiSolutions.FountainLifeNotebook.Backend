@@ -36,10 +36,26 @@ describe('LocalDocumentStorageService', () => {
     ).resolves.toBe('hello world');
 
     await expect(
+      service.storeDocumentMetadata({
+        body: '{"metadataAttributes":{}}',
+        contentType: 'application/json',
+        storageKey: stored.storageKey,
+      }),
+    ).resolves.toEqual({
+      storageKey: `${stored.storageKey}.metadata.json`,
+    });
+    await expect(
+      readFile(join(storageRoot, `${stored.storageKey}.metadata.json`), 'utf8'),
+    ).resolves.toBe('{"metadataAttributes":{}}');
+
+    await expect(
       service.deleteDocument(stored.storageKey),
     ).resolves.toBeUndefined();
     await expect(
       readFile(join(storageRoot, stored.storageKey), 'utf8'),
+    ).rejects.toThrow();
+    await expect(
+      readFile(join(storageRoot, `${stored.storageKey}.metadata.json`), 'utf8'),
     ).rejects.toThrow();
   });
 

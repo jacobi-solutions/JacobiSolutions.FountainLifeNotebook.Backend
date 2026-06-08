@@ -5,7 +5,9 @@ import { StorageService } from '../aws/storage.service';
 import {
   DocumentStorageService,
   StoreDocumentRequest,
+  StoreDocumentMetadataRequest,
   StoredDocumentObject,
+  StoredDocumentMetadataObject,
 } from './document-storage.service';
 import { createDocumentStorageKey } from './document-storage-key';
 
@@ -47,6 +49,32 @@ export class S3DocumentStorageService extends DocumentStorageService {
   }
 
   async deleteDocument(storageKey: string): Promise<void> {
-    await this.storageService.deleteObject(storageKey);
+    await Promise.all([
+      this.storageService.deleteObject(storageKey),
+      this.storageService.deleteObject(createMetadataStorageKey(storageKey)),
+    ]);
   }
+
+  async storeDocumentMetadata(
+    request: StoreDocumentMetadataRequest,
+  ): Promise<StoredDocumentMetadataObject> {
+    const storageKey = createMetadataStorageKey(request.storageKey);
+
+    await this.storageService.putObject({
+      body: request.body,
+      contentType: request.contentType,
+      key: storageKey,
+    });
+
+    return {
+      storageKey,
+      storageUri: this.bucketName
+        ? `s3://${this.bucketName}/${storageKey}`
+        : undefined,
+    };
+  }
+}
+
+function createMetadataStorageKey(storageKey: string) {
+  return `${storageKey}.metadata.json`;
 }

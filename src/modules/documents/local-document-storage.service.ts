@@ -6,7 +6,9 @@ import type { DocumentStorageConfig } from '../../shared/config/app.config';
 import {
   DocumentStorageService,
   StoreDocumentRequest,
+  StoreDocumentMetadataRequest,
   StoredDocumentObject,
+  StoredDocumentMetadataObject,
 } from './document-storage.service';
 import { createDocumentStorageKey } from './document-storage-key';
 
@@ -38,7 +40,24 @@ export class LocalDocumentStorageService extends DocumentStorageService {
   }
 
   async deleteDocument(storageKey: string): Promise<void> {
-    await rm(this.resolveStoragePath(storageKey), { force: true });
+    await Promise.all([
+      rm(this.resolveStoragePath(storageKey), { force: true }),
+      rm(this.resolveStoragePath(createMetadataStorageKey(storageKey)), {
+        force: true,
+      }),
+    ]);
+  }
+
+  async storeDocumentMetadata(
+    request: StoreDocumentMetadataRequest,
+  ): Promise<StoredDocumentMetadataObject> {
+    const storageKey = createMetadataStorageKey(request.storageKey);
+    const filePath = this.resolveStoragePath(storageKey);
+
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, request.body);
+
+    return { storageKey };
   }
 
   private resolveStoragePath(storageKey: string) {
@@ -50,4 +69,8 @@ export class LocalDocumentStorageService extends DocumentStorageService {
 
     return filePath;
   }
+}
+
+function createMetadataStorageKey(storageKey: string) {
+  return `${storageKey}.metadata.json`;
 }

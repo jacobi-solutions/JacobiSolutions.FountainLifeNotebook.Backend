@@ -339,7 +339,16 @@ function buildKnowledgeBaseFilter(request: {
     },
   ];
 
-  if (documentIds.length > 0) {
+  if (documentIds.length === 1) {
+    filters.push({
+      equals: {
+        key: 'documentId',
+        value: documentIds[0],
+      },
+    });
+  }
+
+  if (documentIds.length > 1) {
     filters.push({
       orAll: documentIds.map(
         (documentId): RetrievalFilter => ({
@@ -352,7 +361,7 @@ function buildKnowledgeBaseFilter(request: {
     });
   }
 
-  return { andAll: filters };
+  return filters.length === 1 ? filters[0] : { andAll: filters };
 }
 
 function normalizeCitations(citations: unknown): Citation[] {

@@ -6,6 +6,8 @@ import {
   Workspace,
   WorkspaceDocument,
   type WorkspaceMember,
+  type WorkspaceMemberRole,
+  type WorkspaceMemberStatus,
 } from './schemas/workspace.schema';
 
 @Injectable()
@@ -51,5 +53,62 @@ export class WorkspacesRepository extends BaseRepository<
     }
 
     return workspace;
+  }
+
+  async addOrUpdateMember(input: {
+    email: string;
+    invitedByUserId: string;
+    role: WorkspaceMemberRole;
+    status: WorkspaceMemberStatus;
+    userId?: string;
+    workspaceId: string;
+  }) {
+    const email = input.email.toLocaleLowerCase();
+    const lastUpdatedDateUtc = new Date();
+    const existingWorkspace = await this.model
+      .findOneAndUpdate(
+        {
+          id: input.workspaceId,
+          'members.email': email,
+        },
+        {
+          $set: {
+            'members.$.invitedByUserId': input.invitedByUserId,
+            'members.$.role': input.role,
+            'members.$.status': input.status,
+            'members.$.userId': input.userId,
+            lastUpdatedDateUtc,
+          },
+        },
+        { returnDocument: 'after' },
+      )
+      .exec();
+
+    if (existingWorkspace) {
+      return existingWorkspace;
+    }
+
+    return this.model
+      .findOneAndUpdate(
+        {
+          id: input.workspaceId,
+          members: { $not: { $elemMatch: { email } } },
+        },
+        {
+          $push: {
+            members: {
+              addedDateUtc: new Date(),
+              email,
+              invitedByUserId: input.invitedByUserId,
+              role: input.role,
+              status: input.status,
+              userId: input.userId,
+            },
+          },
+          $set: { lastUpdatedDateUtc },
+        },
+        { returnDocument: 'after' },
+      )
+      .exec();
   }
 }

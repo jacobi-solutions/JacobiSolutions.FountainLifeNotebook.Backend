@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
+import type {
+  WorkspaceMemberRole,
+  WorkspaceMemberStatus,
+} from './schemas/workspace.schema';
 import { WorkspacesRepository } from './workspaces.repository';
 
 @Injectable()
@@ -19,6 +23,20 @@ export class WorkspacesService {
       ],
       name: 'Member workspace',
       ownerUserId: user.subject,
+    });
+  }
+
+  addOrUpdateWorkspaceMember(input: {
+    email: string;
+    invitedByUserId: string;
+    role: WorkspaceMemberRole;
+    status: WorkspaceMemberStatus;
+    userId?: string;
+    workspaceId: string;
+  }) {
+    return this.workspacesRepository.addOrUpdateMember({
+      ...input,
+      email: normalizeEmail(input.email),
     });
   }
 }

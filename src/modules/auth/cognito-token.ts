@@ -20,12 +20,30 @@ export function mapCognitoAccessToken(
 
   const clientId = payload.client_id ?? payload.aud;
   if (clientId !== expectedClientId) {
-    throw new UnauthorizedException('Cognito token was not issued for this client.');
+    throw new UnauthorizedException(
+      'Cognito token was not issued for this client.',
+    );
   }
 
+  const email =
+    normalizeEmail(payload.email) ?? emailFromUsername(payload.username);
+
   return {
-    email: payload.email ?? null,
+    email,
     subject: payload.sub,
-    username: payload.username ?? payload.email ?? payload.sub,
+    username: payload.username ?? email ?? payload.sub,
   };
+}
+
+function normalizeEmail(email: string | undefined) {
+  const normalized = email?.trim().toLocaleLowerCase();
+  return normalized && isEmailLike(normalized) ? normalized : null;
+}
+
+function emailFromUsername(username: string | undefined) {
+  return normalizeEmail(username);
+}
+
+function isEmailLike(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }

@@ -125,7 +125,11 @@ export class NotebooksService {
     inviteDelivery: NotebookInviteDelivery;
     notebook: NotebookSummary;
   }> {
-    await this.assertNotebookRole(request.notebookId, user, ['owner']);
+    const selectedNotebook = await this.assertNotebookRole(
+      request.notebookId,
+      user,
+      ['owner'],
+    );
     if (request.role === 'owner') {
       throw new BadRequestException('Invited users must use a non-owner role.');
     }
@@ -135,15 +139,24 @@ export class NotebooksService {
       throw new BadRequestException('Invite a different email address.');
     }
 
-    const inviteDelivery =
-      await this.invitationService.inviteUserByEmail(email);
-    const notebook = await this.notebooksRepository.addOrUpdateMember({
+    const inviteResult = await this.invitationService.inviteUserByEmail(email);
+    const memberInput = {
       email,
       invitedByUserId: user.subject,
-      notebookId: request.notebookId,
       role: request.role,
-      status: inviteDelivery === 'local' ? 'active' : 'invited',
+      status: inviteResult.delivery === 'local' ? 'active' : 'invited',
+      userId: inviteResult.userId,
+    } as const;
+    await this.workspacesService.addOrUpdateWorkspaceMember({
+      ...memberInput,
+      workspaceId: selectedNotebook.workspaceId,
     });
+    const notebook =
+      await this.notebooksRepository.addOrUpdateMemberForWorkspace({
+        ...memberInput,
+        notebookId: request.notebookId,
+        workspaceId: selectedNotebook.workspaceId,
+      });
     if (!notebook) {
       throw new NotFoundException('Notebook was not found.');
     }
@@ -154,7 +167,7 @@ export class NotebooksService {
     );
 
     return {
-      inviteDelivery,
+      inviteDelivery: inviteResult.delivery,
       notebook: this.toSummary(notebook, counts[request.notebookId] ?? 0, user),
     };
   }
@@ -209,6 +222,8 @@ export class NotebooksService {
         'User is not allowed to manage this notebook.',
       );
     }
+
+    return notebook;
   }
 
   private async getNotebookForMember(

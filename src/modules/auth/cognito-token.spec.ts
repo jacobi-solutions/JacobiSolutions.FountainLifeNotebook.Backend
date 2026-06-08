@@ -14,9 +14,27 @@ describe('mapCognitoAccessToken', () => {
         'client-1',
       ),
     ).toEqual({
-      email: null,
+      email: 'user@example.com',
       subject: 'user-1',
       username: 'user@example.com',
+    });
+  });
+
+  it('leaves email empty when Cognito username is not an email address', () => {
+    expect(
+      mapCognitoAccessToken(
+        {
+          client_id: 'client-1',
+          sub: 'user-1',
+          token_use: 'access',
+          username: 'cognito-user-name',
+        },
+        'client-1',
+      ),
+    ).toEqual({
+      email: null,
+      subject: 'user-1',
+      username: 'cognito-user-name',
     });
   });
 

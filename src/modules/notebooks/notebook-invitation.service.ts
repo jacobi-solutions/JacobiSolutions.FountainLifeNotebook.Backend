@@ -1,13 +1,20 @@
 import {
   AdminCreateUserCommand,
+  AdminGetUserCommand,
   CognitoIdentityProviderClient,
+  UserNotFoundException,
   UsernameExistsException,
+  type AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import type { AuthConfig, AwsConfig } from '../../shared/config/app.config';
 
 export type NotebookInviteDelivery = 'cognito' | 'local' | 'existing-user';
+export interface NotebookInviteResult {
+  delivery: NotebookInviteDelivery;
+  userId?: string;
+}
 
 @Injectable()
 export class NotebookInvitationService {
@@ -25,16 +32,16 @@ export class NotebookInvitationService {
     }
   }
 
-  async inviteUserByEmail(email: string): Promise<NotebookInviteDelivery> {
+  async inviteUserByEmail(email: string): Promise<NotebookInviteResult> {
     if (this.authConfig.authMode !== 'cognito') {
-      return 'local';
+      return { delivery: 'local' };
     }
     if (!this.client) {
       throw new Error('Cognito invite client is not configured.');
     }
 
     try {
-      await this.client.send(
+      const response = await this.client.send(
         new AdminCreateUserCommand({
           DesiredDeliveryMediums: ['EMAIL'],
           UserAttributes: [
@@ -46,13 +53,44 @@ export class NotebookInvitationService {
         }),
       );
 
-      return 'cognito';
+      return {
+        delivery: 'cognito',
+        userId: extractCognitoSub(response.User?.Attributes),
+      };
     } catch (error) {
       if (error instanceof UsernameExistsException) {
-        return 'existing-user';
+        const existingUserId = await this.findExistingUserId(email);
+
+        return {
+          delivery: 'existing-user',
+          userId: existingUserId,
+        };
       }
 
       throw error;
     }
   }
+
+  private async findExistingUserId(email: string) {
+    try {
+      const existingUser = await this.client?.send(
+        new AdminGetUserCommand({
+          Username: email,
+          UserPoolId: this.authConfig.cognitoUserPoolId,
+        }),
+      );
+
+      return extractCognitoSub(existingUser?.UserAttributes);
+    } catch (error) {
+      if (error instanceof UserNotFoundException) {
+        return undefined;
+      }
+
+      throw error;
+    }
+  }
+}
+
+function extractCognitoSub(attributes: AttributeType[] | undefined) {
+  return attributes?.find((attribute) => attribute.Name === 'sub')?.Value;
 }

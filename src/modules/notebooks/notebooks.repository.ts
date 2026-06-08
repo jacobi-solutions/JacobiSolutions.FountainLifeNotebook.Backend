@@ -140,6 +140,67 @@ export class NotebooksRepository extends BaseRepository<
               .exec(),
       );
   }
+
+  async addOrUpdateMemberForWorkspace(input: {
+    email: string;
+    invitedByUserId: string;
+    notebookId: string;
+    role: NotebookMemberRole;
+    status: NotebookMemberStatus;
+    userId?: string;
+    workspaceId: string;
+  }) {
+    const email = input.email.toLocaleLowerCase();
+    const lastUpdatedDateUtc = new Date();
+
+    const existingNotebook = await this.model
+      .findOneAndUpdate(
+        {
+          id: input.notebookId,
+          workspaceId: input.workspaceId,
+          'members.email': email,
+        },
+        {
+          $set: {
+            'members.$.invitedByUserId': input.invitedByUserId,
+            'members.$.role': input.role,
+            'members.$.status': input.status,
+            'members.$.userId': input.userId,
+            lastUpdatedDateUtc,
+          },
+        },
+        { returnDocument: 'after' },
+      )
+      .exec();
+
+    if (existingNotebook) {
+      return existingNotebook;
+    }
+
+    return this.model
+      .findOneAndUpdate(
+        {
+          id: input.notebookId,
+          workspaceId: input.workspaceId,
+          members: { $not: { $elemMatch: { email } } },
+        },
+        {
+          $push: {
+            members: {
+              addedDateUtc: new Date(),
+              email,
+              invitedByUserId: input.invitedByUserId,
+              role: input.role,
+              status: input.status,
+              userId: input.userId,
+            },
+          },
+          $set: { lastUpdatedDateUtc },
+        },
+        { returnDocument: 'after' },
+      )
+      .exec();
+  }
 }
 
 function membershipFilters(user: { email: string | null; subject: string }) {

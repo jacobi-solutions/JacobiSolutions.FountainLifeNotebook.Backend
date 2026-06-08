@@ -146,9 +146,9 @@ describe('NotebooksService', () => {
     );
   });
 
-  it('invites a member by email and stores the selected role', async () => {
+  it('invites a member by email to the selected notebook workspace', async () => {
     const repository = {
-      addOrUpdateMember: jest.fn(async () =>
+      addOrUpdateMemberForWorkspace: jest.fn(async () =>
         createNotebook({
           members: [
             createMember(),
@@ -163,11 +163,18 @@ describe('NotebooksService', () => {
       findByIdForMember: jest.fn(async () => createNotebook()),
     } as unknown as NotebooksRepository;
     const invitationService = {
-      inviteUserByEmail: jest.fn(async () => 'cognito'),
+      inviteUserByEmail: jest.fn(async () => ({
+        delivery: 'cognito',
+        userId: 'doctor-subject',
+      })),
     } as unknown as NotebookInvitationService;
+    const workspacesService = {
+      addOrUpdateWorkspaceMember: jest.fn(),
+    } as unknown as WorkspacesService;
     const service = createService({
       invitationService,
       notebooksRepository: repository,
+      workspacesService,
     });
 
     await expect(
@@ -196,11 +203,23 @@ describe('NotebooksService', () => {
     expect(invitationService.inviteUserByEmail).toHaveBeenCalledWith(
       'doctor@example.com',
     );
-    expect(repository.addOrUpdateMember).toHaveBeenCalledWith(
+    expect(repository.addOrUpdateMemberForWorkspace).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: 'doctor@example.com',
+        notebookId: 'notebook-1',
+        role: 'clinician',
+        status: 'invited',
+        userId: 'doctor-subject',
+        workspaceId: 'workspace-1',
+      }),
+    );
+    expect(workspacesService.addOrUpdateWorkspaceMember).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'doctor@example.com',
         role: 'clinician',
         status: 'invited',
+        userId: 'doctor-subject',
+        workspaceId: 'workspace-1',
       }),
     );
   });
@@ -344,7 +363,7 @@ function createService(
   return new NotebooksService(
     overrides.notebooksRepository ??
       ({
-        addOrUpdateMember: jest.fn(),
+        addOrUpdateMemberForWorkspace: jest.fn(),
         create: jest.fn(),
         findByIdForMember: jest.fn(),
         findByMember: jest.fn(),
@@ -352,10 +371,11 @@ function createService(
       } as unknown as NotebooksRepository),
     overrides.invitationService ??
       ({
-        inviteUserByEmail: jest.fn(async () => 'local'),
+        inviteUserByEmail: jest.fn(async () => ({ delivery: 'local' })),
       } as unknown as NotebookInvitationService),
     overrides.workspacesService ??
       ({
+        addOrUpdateWorkspaceMember: jest.fn(),
         ensureDefaultWorkspaceForUser: jest.fn(async () => ({
           id: 'workspace-1',
         })),

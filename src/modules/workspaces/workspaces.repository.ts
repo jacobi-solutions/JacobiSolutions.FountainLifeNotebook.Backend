@@ -55,6 +55,25 @@ export class WorkspacesRepository extends BaseRepository<
     return workspace;
   }
 
+  findByIdForMember(
+    workspaceId: string,
+    user: { email: string | null; subject: string },
+  ) {
+    return this.model
+      .findOne({
+        id: workspaceId,
+        $or: membershipFilters(user),
+      })
+      .exec();
+  }
+
+  findByMember(user: { email: string | null; subject: string }) {
+    return this.model
+      .find({ $or: membershipFilters(user) })
+      .sort({ lastUpdatedDateUtc: -1 })
+      .exec();
+  }
+
   async addOrUpdateMember(input: {
     email: string;
     invitedByUserId: string;
@@ -65,7 +84,7 @@ export class WorkspacesRepository extends BaseRepository<
   }) {
     const email = input.email.toLocaleLowerCase();
     const lastUpdatedDateUtc = new Date();
-    const existingWorkspace = await this.model
+    const existingWorkspaceByEmail = await this.model
       .findOneAndUpdate(
         {
           id: input.workspaceId,
@@ -84,15 +103,44 @@ export class WorkspacesRepository extends BaseRepository<
       )
       .exec();
 
-    if (existingWorkspace) {
-      return existingWorkspace;
+    if (existingWorkspaceByEmail) {
+      return existingWorkspaceByEmail;
+    }
+
+    if (input.userId) {
+      const existingWorkspaceByUserId = await this.model
+        .findOneAndUpdate(
+          {
+            id: input.workspaceId,
+            'members.userId': input.userId,
+          },
+          {
+            $set: {
+              'members.$.email': email,
+              'members.$.invitedByUserId': input.invitedByUserId,
+              'members.$.role': input.role,
+              'members.$.status': input.status,
+              lastUpdatedDateUtc,
+            },
+          },
+          { returnDocument: 'after' },
+        )
+        .exec();
+
+      if (existingWorkspaceByUserId) {
+        return existingWorkspaceByUserId;
+      }
     }
 
     return this.model
       .findOneAndUpdate(
         {
           id: input.workspaceId,
-          members: { $not: { $elemMatch: { email } } },
+          members: {
+            $not: {
+              $elemMatch: memberIdentityElementFilter(email, input.userId),
+            },
+          },
         },
         {
           $push: {
@@ -111,4 +159,32 @@ export class WorkspacesRepository extends BaseRepository<
       )
       .exec();
   }
+}
+
+function membershipFilters(user: { email: string | null; subject: string }) {
+  const filters: Record<string, unknown>[] = [
+    { ownerUserId: user.subject },
+    { members: { $elemMatch: { userId: user.subject } } },
+  ];
+  if (user.email) {
+    filters.push({
+      members: {
+        $elemMatch: { email: user.email.toLocaleLowerCase() },
+      },
+    });
+  }
+
+  return filters;
+}
+
+function memberIdentityElementFilter(
+  email: string,
+  userId: string | undefined,
+) {
+  const filters: Record<string, unknown>[] = [{ email }];
+  if (userId) {
+    filters.push({ userId });
+  }
+
+  return { $or: filters };
 }

@@ -52,6 +52,23 @@ export class NotebooksRepository extends BaseRepository<
       .exec();
   }
 
+  findByWorkspaceOrMember(
+    workspaceIds: string[],
+    user: { email: string | null; subject: string },
+  ) {
+    return this.model
+      .find({
+        $or: [
+          ...(workspaceIds.length > 0
+            ? [{ workspaceId: { $in: workspaceIds } }]
+            : []),
+          ...membershipFilters(user),
+        ],
+      })
+      .sort({ lastUpdatedDateUtc: -1 })
+      .exec();
+  }
+
   updateByIdForOwner(
     notebookId: string,
     ownerUserId: string,
@@ -81,6 +98,11 @@ export class NotebooksRepository extends BaseRepository<
         ],
       })
       .exec();
+    return result.deletedCount === 1;
+  }
+
+  async deleteById(notebookId: string) {
+    const result = await this.model.deleteOne({ id: notebookId }).exec();
     return result.deletedCount === 1;
   }
 
@@ -139,67 +161,6 @@ export class NotebooksRepository extends BaseRepository<
               )
               .exec(),
       );
-  }
-
-  async addOrUpdateMemberForWorkspace(input: {
-    email: string;
-    invitedByUserId: string;
-    notebookId: string;
-    role: NotebookMemberRole;
-    status: NotebookMemberStatus;
-    userId?: string;
-    workspaceId: string;
-  }) {
-    const email = input.email.toLocaleLowerCase();
-    const lastUpdatedDateUtc = new Date();
-
-    const existingNotebook = await this.model
-      .findOneAndUpdate(
-        {
-          id: input.notebookId,
-          workspaceId: input.workspaceId,
-          'members.email': email,
-        },
-        {
-          $set: {
-            'members.$.invitedByUserId': input.invitedByUserId,
-            'members.$.role': input.role,
-            'members.$.status': input.status,
-            'members.$.userId': input.userId,
-            lastUpdatedDateUtc,
-          },
-        },
-        { returnDocument: 'after' },
-      )
-      .exec();
-
-    if (existingNotebook) {
-      return existingNotebook;
-    }
-
-    return this.model
-      .findOneAndUpdate(
-        {
-          id: input.notebookId,
-          workspaceId: input.workspaceId,
-          members: { $not: { $elemMatch: { email } } },
-        },
-        {
-          $push: {
-            members: {
-              addedDateUtc: new Date(),
-              email,
-              invitedByUserId: input.invitedByUserId,
-              role: input.role,
-              status: input.status,
-              userId: input.userId,
-            },
-          },
-          $set: { lastUpdatedDateUtc },
-        },
-        { returnDocument: 'after' },
-      )
-      .exec();
   }
 }
 

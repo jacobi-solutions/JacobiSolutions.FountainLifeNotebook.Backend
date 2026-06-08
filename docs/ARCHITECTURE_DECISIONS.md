@@ -96,16 +96,17 @@ docs. Use [architecture.md](architecture.md) for deeper backend layering rules.
 
 ## Simple Workspace Membership Before Full Sharing
 
-- Decision: notebooks store explicit members with roles (`owner`, `clinician`,
-  `patient`, and `viewer`), and only owners can invite members or delete
-  notebooks.
+- Decision: workspaces store members with roles (`owner`, `clinician`,
+  `patient`, and `viewer`). Notebook access is derived from workspace
+  membership, with notebook-level members kept as a legacy compatibility path.
 - Why we chose it: the demo needs separate user-scoped workspaces while still
-  allowing a patient, clinician, or reviewer account to share one notebook
+  allowing a patient, clinician, or reviewer account to share one workspace
   without building a full collaboration product.
 - Tradeoffs considered: this is role-based access, not a complete sharing
   workflow. It does not yet include fine-grained permissions, notifications,
   audit workflows, or doctor-review task queues.
 - Evidence/source: `src/modules/notebooks/schemas/notebook.schema.ts`,
+  `src/modules/workspaces/schemas/workspace.schema.ts`,
   `src/modules/notebooks/notebooks.service.ts`,
   `src/modules/notebooks/notebooks.repository.ts`, and
   `src/modules/notebooks/notebooks.service.spec.ts`.

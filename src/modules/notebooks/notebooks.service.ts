@@ -9,6 +9,11 @@ import {
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentsService } from '../documents/documents.service';
 import { WorkspacesService } from '../workspaces/workspaces.service';
+import {
+  Workspace,
+  WorkspaceDocument,
+  WorkspaceMember,
+} from '../workspaces/schemas/workspace.schema';
 import { CreateNotebookRequest } from './data-contracts/create-notebook-request';
 import { InviteNotebookMemberRequest } from './data-contracts/invite-notebook-member-request';
 import { NotebookSummary } from './data-contracts/notebook-summary';
@@ -41,14 +46,27 @@ export class NotebooksService {
   ) {}
 
   async listNotebooks(user: AuthenticatedUser): Promise<NotebookSummary[]> {
-    const notebooks = await this.notebooksRepository.findByMember(user);
+    const workspaces =
+      await this.workspacesService.listWorkspacesForMember(user);
+    const workspaceById = new Map(
+      workspaces.map((workspace) => [workspace.id, workspace]),
+    );
+    const notebooks = await this.notebooksRepository.findByWorkspaceOrMember(
+      workspaces.map((workspace) => workspace.id),
+      user,
+    );
     const counts = await this.documentsService.countDocumentsByNotebook(
       user.subject,
       notebooks.map((notebook) => notebook.id),
     );
 
     return notebooks.map((notebook) =>
-      this.toSummary(notebook, counts[notebook.id] ?? 0, user),
+      this.toSummary(
+        notebook,
+        counts[notebook.id] ?? 0,
+        user,
+        workspaceById.get(notebook.workspaceId),
+      ),
     );
   }
 
@@ -75,29 +93,35 @@ export class NotebooksService {
       workspaceId: workspace.id,
     });
 
-    return this.toSummary(notebook, 0, user);
+    return this.toSummary(notebook, 0, user, workspace);
   }
 
   async updateNotebook(
     request: UpdateNotebookRequest,
     user: AuthenticatedUser,
   ): Promise<NotebookSummary> {
-    await this.assertNotebookRole(request.notebookId, user, ['owner']);
-    const notebook = await this.notebooksRepository.updateByIdForOwner(
+    const access = await this.assertNotebookRole(request.notebookId, user, [
+      'owner',
+    ]);
+    const notebook = await this.notebooksRepository.updateById(
       request.notebookId,
-      user.subject,
       {
-        ...(request.category !== undefined
-          ? { category: cleanValue(request.category, DEFAULT_CATEGORY) }
-          : {}),
-        ...(request.description !== undefined
-          ? {
-              description: cleanValue(request.description, DEFAULT_DESCRIPTION),
-            }
-          : {}),
-        ...(request.title !== undefined
-          ? { title: cleanValue(request.title, DEFAULT_TITLE) }
-          : {}),
+        $set: {
+          ...(request.category !== undefined
+            ? { category: cleanValue(request.category, DEFAULT_CATEGORY) }
+            : {}),
+          ...(request.description !== undefined
+            ? {
+                description: cleanValue(
+                  request.description,
+                  DEFAULT_DESCRIPTION,
+                ),
+              }
+            : {}),
+          ...(request.title !== undefined
+            ? { title: cleanValue(request.title, DEFAULT_TITLE) }
+            : {}),
+        },
       },
     );
     if (!notebook) {
@@ -109,13 +133,18 @@ export class NotebooksService {
       [request.notebookId],
     );
 
-    return this.toSummary(notebook, counts[request.notebookId] ?? 0, user);
+    return this.toSummary(
+      notebook,
+      counts[request.notebookId] ?? 0,
+      user,
+      access.workspace,
+    );
   }
 
   async deleteNotebook(notebookId: string, user: AuthenticatedUser) {
     await this.assertNotebookRole(notebookId, user, ['owner']);
     await this.documentsService.deleteNotebookDocuments(notebookId, user);
-    await this.notebooksRepository.deleteByIdForOwner(notebookId, user.subject);
+    await this.notebooksRepository.deleteById(notebookId);
   }
 
   async inviteNotebookMember(
@@ -149,17 +178,12 @@ export class NotebooksService {
     } as const;
     await this.workspacesService.addOrUpdateWorkspaceMember({
       ...memberInput,
-      workspaceId: selectedNotebook.workspaceId,
+      workspaceId: selectedNotebook.notebook.workspaceId,
     });
-    const notebook =
-      await this.notebooksRepository.addOrUpdateMemberForWorkspace({
-        ...memberInput,
-        notebookId: request.notebookId,
-        workspaceId: selectedNotebook.workspaceId,
-      });
-    if (!notebook) {
-      throw new NotFoundException('Notebook was not found.');
-    }
+    const workspace = await this.workspacesService.findWorkspaceForMember(
+      selectedNotebook.notebook.workspaceId,
+      user,
+    );
 
     const counts = await this.documentsService.countDocumentsByNotebook(
       user.subject,
@@ -168,12 +192,17 @@ export class NotebooksService {
 
     return {
       inviteDelivery: inviteResult.delivery,
-      notebook: this.toSummary(notebook, counts[request.notebookId] ?? 0, user),
+      notebook: this.toSummary(
+        selectedNotebook.notebook,
+        counts[request.notebookId] ?? 0,
+        user,
+        workspace ?? undefined,
+      ),
     };
   }
 
   async assertNotebookAccess(notebookId: string, user: AuthenticatedUser) {
-    await this.getNotebookForMember(notebookId, user);
+    await this.getNotebookAccess(notebookId, user);
   }
 
   async assertNotebookWriteAccess(notebookId: string, user: AuthenticatedUser) {
@@ -195,6 +224,7 @@ export class NotebooksService {
     notebook: Notebook | NotebookDocument,
     sourceCount: number,
     user?: AuthenticatedUser,
+    workspace?: Workspace | WorkspaceDocument,
   ): NotebookSummary {
     return {
       category: notebook.category,
@@ -202,8 +232,8 @@ export class NotebooksService {
       description: notebook.description,
       id: notebook.id,
       lastUpdatedDateUtc: notebook.lastUpdatedDateUtc,
-      members: normalizeMembers(notebook, user),
-      role: getMemberRole(notebook, user) ?? 'viewer',
+      members: normalizeMembers(notebook, user, workspace),
+      role: getMemberRole(notebook, user, workspace) ?? 'viewer',
       sourceCount,
       title: notebook.title,
       workspaceId: notebook.workspaceId,
@@ -215,30 +245,33 @@ export class NotebooksService {
     user: AuthenticatedUser,
     allowedRoles: NotebookMemberRole[],
   ) {
-    const notebook = await this.getNotebookForMember(notebookId, user);
-    const role = getMemberRole(notebook, user);
+    const access = await this.getNotebookAccess(notebookId, user);
+    const role = access.role;
     if (!role || !allowedRoles.includes(role)) {
       throw new ForbiddenException(
         'User is not allowed to manage this notebook.',
       );
     }
 
-    return notebook;
+    return access;
   }
 
-  private async getNotebookForMember(
-    notebookId: string,
-    user: AuthenticatedUser,
-  ) {
-    const notebook = await this.notebooksRepository.findByIdForMember(
-      notebookId,
-      user,
-    );
+  private async getNotebookAccess(notebookId: string, user: AuthenticatedUser) {
+    const notebook = await this.notebooksRepository.findById(notebookId);
     if (!notebook) {
       throw new NotFoundException('Notebook was not found.');
     }
 
-    return notebook;
+    const workspace = await this.workspacesService.findWorkspaceForMember(
+      notebook.workspaceId,
+      user,
+    );
+    const role = getMemberRole(notebook, user, workspace ?? undefined);
+    if (!role) {
+      throw new NotFoundException('Notebook was not found.');
+    }
+
+    return { notebook, role, workspace: workspace ?? undefined };
   }
 }
 
@@ -254,8 +287,9 @@ function normalizeEmail(email: string | null | undefined) {
 function normalizeMembers(
   notebook: Notebook | NotebookDocument,
   user?: AuthenticatedUser,
+  workspace?: Workspace | WorkspaceDocument,
 ) {
-  const members = notebook.members ?? [];
+  const members = workspace?.members ?? notebook.members ?? [];
   if (members.length > 0) {
     return members.map((member) => ({
       email: member.email,
@@ -281,9 +315,14 @@ function normalizeMembers(
 function getMemberRole(
   notebook: Notebook | NotebookDocument,
   user?: AuthenticatedUser,
+  workspace?: Workspace | WorkspaceDocument,
 ): NotebookMemberRole | undefined {
   if (!user) {
     return undefined;
+  }
+  const workspaceRole = getWorkspaceMemberRole(workspace, user);
+  if (workspaceRole) {
+    return workspaceRole;
   }
   if (notebook.ownerUserId === user.subject) {
     return 'owner';
@@ -297,6 +336,31 @@ function getMemberRole(
 
     return Boolean(email && candidate.email === email);
   });
+
+  return member?.role;
+}
+
+function getWorkspaceMemberRole(
+  workspace: Workspace | WorkspaceDocument | undefined,
+  user: AuthenticatedUser,
+): NotebookMemberRole | undefined {
+  if (!workspace) {
+    return undefined;
+  }
+  if (workspace.ownerUserId === user.subject) {
+    return 'owner';
+  }
+
+  const email = normalizeEmail(user.email);
+  const member = (workspace.members ?? []).find(
+    (candidate: WorkspaceMember) => {
+      if (candidate.userId && candidate.userId === user.subject) {
+        return true;
+      }
+
+      return Boolean(email && candidate.email === email);
+    },
+  );
 
   return member?.role;
 }

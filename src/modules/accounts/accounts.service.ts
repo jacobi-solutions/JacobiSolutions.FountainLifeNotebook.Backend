@@ -13,13 +13,17 @@ export class AccountsService {
   }
 
   async registerCurrentUser(user: AuthenticatedUser): Promise<AccountSummary> {
-    const account = await this.accountsRepository.upsertAccount({
+    const account = await this.ensureCurrentUser(user);
+
+    return this.toSummary(account);
+  }
+
+  ensureCurrentUser(user: AuthenticatedUser): Promise<AccountDocument> {
+    return this.accountsRepository.upsertAccount({
       cognitoSubject: user.subject,
       email: user.email ?? `${user.subject}@unknown.local`,
       username: user.username,
     });
-
-    return this.toSummary(account);
   }
 
   private toSummary(account: AccountDocument): AccountSummary {

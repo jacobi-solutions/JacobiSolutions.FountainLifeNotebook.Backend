@@ -26,6 +26,14 @@ export class WorkspacesService {
     });
   }
 
+  findWorkspaceForMember(workspaceId: string, user: AuthenticatedUser) {
+    return this.workspacesRepository.findByIdForMember(workspaceId, user);
+  }
+
+  listWorkspacesForMember(user: AuthenticatedUser) {
+    return this.workspacesRepository.findByMember(user);
+  }
+
   addOrUpdateWorkspaceMember(input: {
     email: string;
     invitedByUserId: string;

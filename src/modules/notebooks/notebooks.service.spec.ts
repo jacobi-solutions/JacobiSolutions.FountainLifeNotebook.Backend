@@ -17,7 +17,7 @@ describe('NotebooksService', () => {
         countDocumentsByNotebook: jest.fn(async () => ({ 'notebook-1': 3 })),
       } as unknown as DocumentsService,
       notebooksRepository: {
-        findByMember: jest.fn(async () => [notebook]),
+        findByWorkspaceOrMember: jest.fn(async () => [notebook]),
       } as unknown as NotebooksRepository,
     });
 
@@ -78,11 +78,11 @@ describe('NotebooksService', () => {
   it('deletes notebook documents before deleting an owner notebook', async () => {
     const order: string[] = [];
     const repository = {
-      deleteByIdForOwner: jest.fn(async () => {
+      deleteById: jest.fn(async () => {
         order.push('notebook');
         return true;
       }),
-      findByIdForMember: jest.fn(async () => createNotebook()),
+      findById: jest.fn(async () => createNotebook()),
     } as unknown as NotebooksRepository;
     const service = createService({
       documentsService: {
@@ -109,8 +109,8 @@ describe('NotebooksService', () => {
       countDocumentsByNotebook: jest.fn(async () => ({ 'notebook-1': 4 })),
     } as unknown as DocumentsService;
     const repository = {
-      findByIdForMember: jest.fn(async () => createNotebook()),
-      updateByIdForOwner: jest.fn(async () => updatedNotebook),
+      findById: jest.fn(async () => createNotebook()),
+      updateById: jest.fn(async () => updatedNotebook),
     } as unknown as NotebooksRepository;
     const service = createService({
       documentsService,
@@ -135,32 +135,21 @@ describe('NotebooksService', () => {
         title: 'Updated title',
       }),
     );
-    expect(repository.updateByIdForOwner).toHaveBeenCalledWith(
+    expect(repository.updateById).toHaveBeenCalledWith(
       'notebook-1',
-      'user-1',
       expect.objectContaining({
-        category: 'Diagnostics',
-        description: 'Updated description',
-        title: 'Updated title',
+        $set: expect.objectContaining({
+          category: 'Diagnostics',
+          description: 'Updated description',
+          title: 'Updated title',
+        }),
       }),
     );
   });
 
   it('invites a member by email to the selected notebook workspace', async () => {
     const repository = {
-      addOrUpdateMemberForWorkspace: jest.fn(async () =>
-        createNotebook({
-          members: [
-            createMember(),
-            {
-              email: 'doctor@example.com',
-              role: 'clinician',
-              status: 'invited',
-            },
-          ],
-        }),
-      ),
-      findByIdForMember: jest.fn(async () => createNotebook()),
+      findById: jest.fn(async () => createNotebook()),
     } as unknown as NotebooksRepository;
     const invitationService = {
       inviteUserByEmail: jest.fn(async () => ({
@@ -170,6 +159,19 @@ describe('NotebooksService', () => {
     } as unknown as NotebookInvitationService;
     const workspacesService = {
       addOrUpdateWorkspaceMember: jest.fn(),
+      findWorkspaceForMember: jest.fn(async () =>
+        createWorkspace({
+          members: [
+            createMember(),
+            {
+              email: 'doctor@example.com',
+              role: 'clinician',
+              status: 'invited',
+              userId: 'doctor-subject',
+            },
+          ],
+        }),
+      ),
     } as unknown as WorkspacesService;
     const service = createService({
       invitationService,
@@ -203,16 +205,6 @@ describe('NotebooksService', () => {
     expect(invitationService.inviteUserByEmail).toHaveBeenCalledWith(
       'doctor@example.com',
     );
-    expect(repository.addOrUpdateMemberForWorkspace).toHaveBeenCalledWith(
-      expect.objectContaining({
-        email: 'doctor@example.com',
-        notebookId: 'notebook-1',
-        role: 'clinician',
-        status: 'invited',
-        userId: 'doctor-subject',
-        workspaceId: 'workspace-1',
-      }),
-    );
     expect(workspacesService.addOrUpdateWorkspaceMember).toHaveBeenCalledWith(
       expect.objectContaining({
         email: 'doctor@example.com',
@@ -226,7 +218,7 @@ describe('NotebooksService', () => {
 
   it('rejects inviting the current owner email as a different role', async () => {
     const repository = {
-      findByIdForMember: jest.fn(async () => createNotebook()),
+      findById: jest.fn(async () => createNotebook()),
     } as unknown as NotebooksRepository;
     const invitationService = {
       inviteUserByEmail: jest.fn(),
@@ -252,7 +244,7 @@ describe('NotebooksService', () => {
   it('allows email-based invited members to access notebooks', async () => {
     const service = createService({
       notebooksRepository: {
-        findByIdForMember: jest.fn(async () =>
+        findById: jest.fn(async () =>
           createNotebook({
             ownerUserId: 'owner-1',
             members: [
@@ -278,10 +270,48 @@ describe('NotebooksService', () => {
     ).resolves.toBeUndefined();
   });
 
+  it('allows workspace members to access notebooks without notebook membership', async () => {
+    const service = createService({
+      notebooksRepository: {
+        findById: jest.fn(async () =>
+          createNotebook({
+            ownerUserId: 'owner-1',
+            members: [createMember({ userId: 'owner-1' })],
+          }),
+        ),
+      } as unknown as NotebooksRepository,
+      workspacesService: {
+        findWorkspaceForMember: jest.fn(async () =>
+          createWorkspace({
+            ownerUserId: 'owner-1',
+            members: [
+              createMember({ userId: 'owner-1' }),
+              createMember({
+                email: 'guest@example.com',
+                role: 'patient',
+                status: 'active',
+                userId: 'guest-subject',
+              }),
+            ],
+          }),
+        ),
+        listWorkspacesForMember: jest.fn(async () => []),
+      } as unknown as WorkspacesService,
+    });
+
+    await expect(
+      service.assertNotebookWriteAccess('notebook-1', {
+        email: 'guest@example.com',
+        subject: 'guest-subject',
+        username: 'guest@example.com',
+      }),
+    ).resolves.toBeUndefined();
+  });
+
   it('rejects viewer write access', async () => {
     const service = createService({
       notebooksRepository: {
-        findByIdForMember: jest.fn(async () =>
+        findById: jest.fn(async () =>
           createNotebook({
             ownerUserId: 'owner-1',
             members: [
@@ -310,7 +340,7 @@ describe('NotebooksService', () => {
   it('throws when asserting access to an inaccessible notebook', async () => {
     const service = createService({
       notebooksRepository: {
-        findByIdForMember: jest.fn(async () => undefined),
+        findById: jest.fn(async () => undefined),
       } as unknown as NotebooksRepository,
     });
 
@@ -352,6 +382,19 @@ function createNotebook(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function createWorkspace(overrides: Record<string, unknown> = {}) {
+  return {
+    createdDateUtc: new Date('2026-01-01T00:00:00.000Z'),
+    id: 'workspace-1',
+    isDefault: true,
+    lastUpdatedDateUtc: new Date('2026-01-01T00:00:00.000Z'),
+    members: [createMember()],
+    name: 'Member workspace',
+    ownerUserId: 'user-1',
+    ...overrides,
+  };
+}
+
 function createService(
   overrides: {
     documentsService?: DocumentsService;
@@ -363,11 +406,11 @@ function createService(
   return new NotebooksService(
     overrides.notebooksRepository ??
       ({
-        addOrUpdateMemberForWorkspace: jest.fn(),
         create: jest.fn(),
-        findByIdForMember: jest.fn(),
-        findByMember: jest.fn(),
-        updateByIdForOwner: jest.fn(),
+        deleteById: jest.fn(),
+        findById: jest.fn(),
+        findByWorkspaceOrMember: jest.fn(),
+        updateById: jest.fn(),
       } as unknown as NotebooksRepository),
     overrides.invitationService ??
       ({
@@ -378,7 +421,11 @@ function createService(
         addOrUpdateWorkspaceMember: jest.fn(),
         ensureDefaultWorkspaceForUser: jest.fn(async () => ({
           id: 'workspace-1',
+          members: [createMember()],
+          ownerUserId: 'user-1',
         })),
+        findWorkspaceForMember: jest.fn(async () => createWorkspace()),
+        listWorkspacesForMember: jest.fn(async () => [createWorkspace()]),
       } as unknown as WorkspacesService),
     overrides.documentsService ??
       ({

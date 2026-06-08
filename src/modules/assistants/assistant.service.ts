@@ -12,6 +12,7 @@ import {
   ASSISTANT_SEARCH_STATUS_TEXT,
 } from './assistant.constants';
 import { AssistantSummary } from './assistant-handler';
+import { normalizeAssistantResponseText } from './assistant-response-normalizer';
 import { AssistantRegistry } from './assistant-registry';
 import { AssistantConversation as AssistantConversationContract } from './data-contracts/assistant-conversation';
 import { AssistantConversationMessage } from './data-contracts/assistant-conversation-message';
@@ -86,10 +87,11 @@ export class AssistantService {
       notebookId: request.notebookId,
       ownerUserId: user.subject,
     });
+    const assistantAnswerText = normalizeAssistantResponseText(answer.answer);
     const assistantMessage = this.createAssistantMessage(
       turnId,
       handler.summary.name,
-      answer.answer,
+      assistantAnswerText,
       answer.citations,
     );
 
@@ -282,7 +284,7 @@ export class AssistantService {
             createdDateUtc: item.createdDateUtc,
             id: item.id,
             role: item.role,
-            text: item.text,
+            text: this.normalizeMessageText(item),
           }),
         ),
       participants: conversation.participants.map(
@@ -313,6 +315,12 @@ export class AssistantService {
     );
 
     return normalized.length > 0 ? normalized : undefined;
+  }
+
+  private normalizeMessageText(item: AssistantConversationItem) {
+    return item.role === 'assistant'
+      ? normalizeAssistantResponseText(item.text)
+      : item.text;
   }
 }
 

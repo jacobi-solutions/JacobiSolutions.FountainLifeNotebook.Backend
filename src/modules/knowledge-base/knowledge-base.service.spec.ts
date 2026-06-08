@@ -28,6 +28,66 @@ describe('KnowledgeBaseService', () => {
     });
   });
 
+  it('requests direct generated answers without tool trace output', async () => {
+    const send = mockRetrieveAndGenerate();
+    const service = new KnowledgeBaseService(createConfigService());
+
+    await service.answerQuestion({
+      message: 'Summarize the files.',
+      notebookId: 'notebook-1',
+      ownerUserId: 'user-1',
+    });
+
+    const promptTemplate = readPromptTemplate(send);
+    expect(promptTemplate).toContain('$query$');
+    expect(promptTemplate).toContain('$search_results$');
+    expect(promptTemplate).toContain('Do not write internal planning');
+    expect(promptTemplate).toContain('Action lines');
+  });
+
+  it('does not expose raw tool action text as a generated answer', async () => {
+    mockRetrieveAndGenerate(
+      'Action: GlobalDataSource.search(query="summarize the files")',
+    );
+    const service = new KnowledgeBaseService(createConfigService());
+
+    await expect(
+      service.answerQuestion({
+        message: 'Summarize the files.',
+        notebookId: 'notebook-1',
+        ownerUserId: 'user-1',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        answer: expect.stringContaining('could not generate a usable answer'),
+      }),
+    );
+  });
+
+  it('keeps the final answer when Bedrock returns a tool trace plus final answer', async () => {
+    mockRetrieveAndGenerate(
+      [
+        'Thought: I should search the source.',
+        'Action: GlobalDataSource.search(query="summarize the files")',
+        'Observation: Found source text.',
+        'Final Answer: The documents focus on sleep and recovery. [1]',
+      ].join('\n'),
+    );
+    const service = new KnowledgeBaseService(createConfigService());
+
+    await expect(
+      service.answerQuestion({
+        message: 'Summarize the files.',
+        notebookId: 'notebook-1',
+        ownerUserId: 'user-1',
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        answer: 'The documents focus on sleep and recovery. [1]',
+      }),
+    );
+  });
+
   it('uses direct equals filters when one document is selected', async () => {
     const send = mockRetrieveAndGenerate();
     const service = new KnowledgeBaseService(createConfigService());
@@ -97,11 +157,11 @@ describe('KnowledgeBaseService', () => {
   });
 });
 
-function mockRetrieveAndGenerate() {
+function mockRetrieveAndGenerate(outputText = 'Knowledge base answer.') {
   return jest
     .spyOn(BedrockAgentRuntimeClient.prototype, 'send')
     .mockResolvedValue({
-      output: { text: 'Knowledge base answer.' },
+      output: { text: outputText },
     } as never);
 }
 
@@ -110,6 +170,15 @@ function readFilter(send: jest.SpiedFunction<BedrockAgentRuntimeClient['send']>)
   return command.input.retrieveAndGenerateConfiguration
     ?.knowledgeBaseConfiguration?.retrievalConfiguration
     ?.vectorSearchConfiguration?.filter;
+}
+
+function readPromptTemplate(
+  send: jest.SpiedFunction<BedrockAgentRuntimeClient['send']>,
+) {
+  const command = send.mock.calls[0][0] as RetrieveAndGenerateCommand;
+  return command.input.retrieveAndGenerateConfiguration
+    ?.knowledgeBaseConfiguration?.generationConfiguration?.promptTemplate
+    ?.textPromptTemplate;
 }
 
 function createConfigService() {

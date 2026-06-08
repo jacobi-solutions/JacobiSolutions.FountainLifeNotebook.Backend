@@ -335,6 +335,63 @@ describe('AssistantService', () => {
     );
   });
 
+  it('normalizes saved assistant tool traces before returning conversations', async () => {
+    const conversationDate = new Date('2026-01-01T00:00:00.000Z');
+    const repository = {
+      findLatestByNotebookForParticipant: jest.fn(async () => ({
+        assistantKey: NOTEBOOK_ASSISTANT_KEY,
+        createdDateUtc: conversationDate,
+        id: 'conversation-1',
+        items: [
+          {
+            actorDisplayName: 'Notebook Assistant',
+            actorType: 'assistant',
+            createdDateUtc: conversationDate,
+            id: 'message-1',
+            role: 'assistant',
+            text: 'Action: GlobalDataSource.search(query="summarize the files")',
+            visibility: 'user',
+          },
+        ],
+        lastUpdatedDateUtc: conversationDate,
+        metadata: { notebookId: 'notebook-1' },
+        participants: [
+          {
+            joinedDateUtc: conversationDate,
+            role: 'owner',
+            status: 'active',
+            userId: 'sub-123',
+          },
+        ],
+      })),
+    } as unknown as AssistantConversationsRepository;
+    const service = new AssistantService(
+      repository,
+      {
+        getOrThrow: jest.fn(() => ({
+          answerQuestion: jest.fn(),
+          summary: { description: '', key: NOTEBOOK_ASSISTANT_KEY, name: '' },
+        })),
+      } as unknown as AssistantRegistry,
+      createNotebooksService(),
+    );
+
+    const conversation = await service.getNotebookConversation(
+      NOTEBOOK_ASSISTANT_KEY,
+      'notebook-1',
+      {
+        email: 'user@example.com',
+        subject: 'sub-123',
+        username: 'user@example.com',
+      },
+    );
+
+    expect(conversation?.messages[0].text).toContain(
+      'could not generate a usable answer',
+    );
+    expect(conversation?.messages[0].text).not.toContain('Action:');
+  });
+
   it('clears notebook conversations after verifying notebook access', async () => {
     const repository = {
       deleteByNotebookForParticipant: jest.fn(async () => ({ deletedCount: 1 })),

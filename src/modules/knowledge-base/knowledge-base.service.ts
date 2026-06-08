@@ -17,6 +17,7 @@ import type {
   RetrievalConfig,
 } from '../../shared/config/app.config';
 import { Citation } from '../assistants/data-contracts/citation';
+import { normalizeAssistantResponseText } from '../assistants/assistant-response-normalizer';
 
 export interface KnowledgeBaseDocumentMetadata {
   documentId: string;
@@ -156,6 +157,11 @@ export class KnowledgeBaseService {
           input: { text: request.message },
           retrieveAndGenerateConfiguration: {
             knowledgeBaseConfiguration: {
+              generationConfiguration: {
+                promptTemplate: {
+                  textPromptTemplate: buildKnowledgeBaseGenerationPrompt(),
+                },
+              },
               knowledgeBaseId: this.requireKnowledgeBaseId(),
               modelArn: this.resolveKnowledgeBaseModelArn(),
               retrievalConfiguration: {
@@ -171,9 +177,7 @@ export class KnowledgeBaseService {
       );
 
       return {
-        answer:
-          response.output?.text ??
-          'The knowledge base returned an empty response.',
+        answer: normalizeAssistantResponseText(response.output?.text),
         citations: normalizeCitations(response.citations),
       };
     } catch (error) {
@@ -290,6 +294,24 @@ export class KnowledgeBaseService {
 
     return `arn:aws:bedrock:${this.awsConfig.region}::foundation-model/${this.llmConfig.bedrockModelId}`;
   }
+}
+
+function buildKnowledgeBaseGenerationPrompt() {
+  return [
+    'You are the Fountain Life notebook assistant.',
+    'Answer the user directly using only the search results.',
+    'Do not write internal planning, tool calls, function names, Action lines, Observation lines, or Thought lines.',
+    'If the search results do not contain enough information, say what is missing.',
+    'Use bracketed citation numbers when supported by the search results.',
+    '',
+    '<question>',
+    '$query$',
+    '</question>',
+    '',
+    '<search_results>',
+    '$search_results$',
+    '</search_results>',
+  ].join('\n');
 }
 
 function createStringMetadata(key: string, value: string) {

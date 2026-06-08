@@ -3,6 +3,7 @@ import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AccountsModule } from './modules/accounts/accounts.module';
+import { AlertcheckModule } from './modules/alertcheck/alertcheck.module';
 import { AssistantsModule } from './modules/assistants/assistants.module';
 import { AwsModule } from './modules/aws/aws.module';
 import { AuthModule } from './modules/auth/auth.module';
@@ -29,8 +30,7 @@ import { RequestResponseLoggingInterceptor } from './shared/http/request-respons
     MongooseModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => {
-        const database =
-          configService.getOrThrow<DatabaseConfig>('database');
+        const database = configService.getOrThrow<DatabaseConfig>('database');
         return {
           dbName: database.databaseName,
           uri: database.uri,
@@ -39,6 +39,7 @@ import { RequestResponseLoggingInterceptor } from './shared/http/request-respons
     }),
     AwsModule,
     AuthModule,
+    AlertcheckModule,
     AccountsModule,
     DocumentsModule,
     NotebooksModule,

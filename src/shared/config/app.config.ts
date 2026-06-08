@@ -69,20 +69,32 @@ export interface LoggingConfig {
   logLevel: MinimumLogLevel;
 }
 
-export const applicationConfig = registerAs('app', (): ApplicationConfig => ({
-  environment: readEnum(
-    process.env.APP_ENV,
-    APP_ENVIRONMENTS,
-    'local',
-    'APP_ENV',
-  ),
-  frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
-  port: Number(process.env.PORT ?? 3000),
-}));
+export interface MonitoringConfig {
+  alertcheckAllowedEmails: string[];
+  alertTopicArn?: string;
+  alertTopicRegion: string;
+}
 
-export const awsConfig = registerAs('aws', (): AwsConfig => ({
-  region: process.env.AWS_REGION ?? 'us-east-1',
-}));
+export const applicationConfig = registerAs(
+  'app',
+  (): ApplicationConfig => ({
+    environment: readEnum(
+      process.env.APP_ENV,
+      APP_ENVIRONMENTS,
+      'local',
+      'APP_ENV',
+    ),
+    frontendOrigin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:5173',
+    port: Number(process.env.PORT ?? 3000),
+  }),
+);
+
+export const awsConfig = registerAs(
+  'aws',
+  (): AwsConfig => ({
+    region: process.env.AWS_REGION ?? 'us-east-1',
+  }),
+);
 
 export const authConfig = registerAs('auth', (): AuthConfig => {
   const authMode = readEnum(
@@ -105,16 +117,18 @@ export const authConfig = registerAs('auth', (): AuthConfig => {
     localUser: {
       email: localEmail,
       subject: localSubject,
-      username:
-        process.env.LOCAL_AUTH_USERNAME ?? localEmail ?? localSubject,
+      username: process.env.LOCAL_AUTH_USERNAME ?? localEmail ?? localSubject,
     },
   };
 });
 
-export const databaseConfig = registerAs('database', (): DatabaseConfig => ({
-  databaseName: process.env.MONGODB_DATABASE ?? 'fountain-life-notebook',
-  uri: process.env.MONGODB_URI ?? '',
-}));
+export const databaseConfig = registerAs(
+  'database',
+  (): DatabaseConfig => ({
+    databaseName: process.env.MONGODB_DATABASE ?? 'fountain-life-notebook',
+    uri: process.env.MONGODB_URI ?? '',
+  }),
+);
 
 export const documentStorageConfig = registerAs(
   'documentStorage',
@@ -176,13 +190,31 @@ export const retrievalConfig = registerAs('retrieval', (): RetrievalConfig => {
   };
 });
 
-export const loggingConfig = registerAs('logging', (): LoggingConfig => ({
-  logApplicationName:
-    process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
-  logDirectory: process.env.LOG_DIRECTORY ?? 'var/logs',
-  logFileName: process.env.LOG_FILE_NAME ?? 'backend-%DATE%.log',
-  logLevel: normalizeMinimumLogLevel(process.env.LOG_LEVEL),
-}));
+export const loggingConfig = registerAs(
+  'logging',
+  (): LoggingConfig => ({
+    logApplicationName:
+      process.env.LOG_APPLICATION_NAME ?? 'FountainLifeNotebook.Backend',
+    logDirectory: process.env.LOG_DIRECTORY ?? 'var/logs',
+    logFileName: process.env.LOG_FILE_NAME ?? 'backend-%DATE%.log',
+    logLevel: normalizeMinimumLogLevel(process.env.LOG_LEVEL),
+  }),
+);
+
+export const monitoringConfig = registerAs(
+  'monitoring',
+  (): MonitoringConfig => {
+    const awsRegion = process.env.AWS_REGION ?? 'us-east-1';
+
+    return {
+      alertcheckAllowedEmails: readCsv(
+        process.env.MONITORING_ALERTCHECK_ALLOWED_EMAILS,
+      ),
+      alertTopicArn: process.env.MONITORING_ALERT_TOPIC_ARN,
+      alertTopicRegion: process.env.MONITORING_ALERT_TOPIC_REGION ?? awsRegion,
+    };
+  },
+);
 
 export const configLoaders = [
   applicationConfig,
@@ -193,6 +225,7 @@ export const configLoaders = [
   llmConfig,
   retrievalConfig,
   loggingConfig,
+  monitoringConfig,
 ];
 
 export function validateConfig(config: Record<string, unknown>) {
@@ -292,4 +325,11 @@ function readEnum<TValue extends string>(
   }
 
   return normalized as TValue;
+}
+
+function readCsv(value: string | undefined) {
+  return (value ?? '')
+    .split(',')
+    .map((item) => item.trim().toLocaleLowerCase())
+    .filter(Boolean);
 }

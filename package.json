@@ -31,6 +31,7 @@
     "@aws-sdk/client-cognito-identity-provider": "^3.1063.0",
     "@aws-sdk/client-s3": "^3.1045.0",
     "@aws-sdk/client-secrets-manager": "^3.1045.0",
+    "@aws-sdk/client-sns": "^3.1063.0",
     "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@langchain/textsplitters": "^1.0.1",
     "@nestjs/common": "^11.0.1",

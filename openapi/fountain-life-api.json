@@ -73,6 +73,27 @@
         ]
       }
     },
+    "/alertcheck": {
+      "get": {
+        "operationId": "triggerAlertcheck",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertcheckResponse"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "alertcheck"
+        ]
+      }
+    },
     "/assistants/list-assistants": {
       "post": {
         "operationId": "listAssistants",
@@ -701,6 +722,32 @@
           "errors",
           "isSuccess",
           "account"
+        ]
+      },
+      "AlertcheckResponse": {
+        "type": "object",
+        "properties": {
+          "messageId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "sent"
+            ]
+          },
+          "timestamp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "messageId",
+          "name",
+          "status",
+          "timestamp"
         ]
       },
       "ListAssistantsRequest": {

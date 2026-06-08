@@ -29,7 +29,8 @@ FountainLifeNotebook/
 
 - Purpose: backend API, auth boundary, document ingestion, persistence,
   assistant orchestration, and OpenAPI contracts.
-- Running app: [https://d10nrh49pw7gmt.cloudfront.net](https://d10nrh49pw7gmt.cloudfront.net)
+- Running app: current demo deployment at
+  [https://d10nrh49pw7gmt.cloudfront.net](https://d10nrh49pw7gmt.cloudfront.net)
 - Fast-track setup: `npm run setup:local`, then `npm run start:dev`.
 - Local dependency: MongoDB at the `MONGODB_URI` in `.env`.
 - Main review areas: `src/modules/documents`, `src/modules/assistants`,
@@ -96,6 +97,14 @@ equivalent is:
 npm ci
 test -f .env || cp .env.example .env
 mkdir -p var/uploads var/logs openapi
+```
+
+For normal local mode, no `.env` edits are needed if MongoDB is available at the
+default URI. If your MongoDB is somewhere else, edit this line in the backend
+`.env` before starting the API:
+
+```text
+MONGODB_URI=mongodb://localhost:27017/fountain-life-notebook
 ```
 
 ## Details: Backend Only
@@ -194,7 +203,7 @@ For the full list, see [.env.example](.env.example).
 
 The deployed backend runs on ECS Fargate behind an ALB, stores documents in S3,
 uses Cognito for auth, reads MongoDB Atlas from Secrets Manager, and uses
-Bedrock/Knowledge Bases for deployed retrieval. The running frontend is
+Bedrock/Knowledge Bases for deployed retrieval. The current demo frontend is
 [https://d10nrh49pw7gmt.cloudfront.net](https://d10nrh49pw7gmt.cloudfront.net).
 Terraform lives in the sibling infra repo.
 

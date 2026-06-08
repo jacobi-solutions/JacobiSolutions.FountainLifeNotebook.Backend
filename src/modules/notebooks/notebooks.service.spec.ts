@@ -1,8 +1,13 @@
-import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { DocumentsService } from '../documents/documents.service';
 import { NotebookInvitationService } from './notebook-invitation.service';
 import { NotebooksRepository } from './notebooks.repository';
 import { NotebooksService } from './notebooks.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
 
 describe('NotebooksService', () => {
   it('lists member notebooks with source counts and caller role', async () => {
@@ -29,6 +34,7 @@ describe('NotebooksService', () => {
         ],
         role: 'owner',
         sourceCount: 3,
+        workspaceId: 'workspace-1',
       }),
     ]);
   });
@@ -46,8 +52,13 @@ describe('NotebooksService', () => {
     const service = createService({ notebooksRepository: repository });
 
     await expect(
-      service.createNotebook({ category: '', description: '', title: '' }, user),
-    ).resolves.toEqual(expect.objectContaining({ id: 'notebook-1', role: 'owner' }));
+      service.createNotebook(
+        { category: '', description: '', title: '' },
+        user,
+      ),
+    ).resolves.toEqual(
+      expect.objectContaining({ id: 'notebook-1', role: 'owner' }),
+    );
     expect(repository.create).toHaveBeenCalledWith(
       expect.objectContaining({
         members: [
@@ -59,6 +70,7 @@ describe('NotebooksService', () => {
           }),
         ],
         ownerUserId: 'user-1',
+        workspaceId: 'workspace-1',
       }),
     );
   });
@@ -81,7 +93,9 @@ describe('NotebooksService', () => {
       notebooksRepository: repository,
     });
 
-    await expect(service.deleteNotebook('notebook-1', user)).resolves.toBeUndefined();
+    await expect(
+      service.deleteNotebook('notebook-1', user),
+    ).resolves.toBeUndefined();
     expect(order).toEqual(['documents', 'notebook']);
   });
 
@@ -314,15 +328,19 @@ function createNotebook(overrides: Record<string, unknown> = {}) {
     members: [createMember()],
     ownerUserId: 'user-1',
     title: 'Notebook',
+    workspaceId: 'workspace-1',
     ...overrides,
   };
 }
 
-function createService(overrides: {
-  documentsService?: DocumentsService;
-  invitationService?: NotebookInvitationService;
-  notebooksRepository?: NotebooksRepository;
-} = {}) {
+function createService(
+  overrides: {
+    documentsService?: DocumentsService;
+    invitationService?: NotebookInvitationService;
+    notebooksRepository?: NotebooksRepository;
+    workspacesService?: WorkspacesService;
+  } = {},
+) {
   return new NotebooksService(
     overrides.notebooksRepository ??
       ({
@@ -336,6 +354,12 @@ function createService(overrides: {
       ({
         inviteUserByEmail: jest.fn(async () => 'local'),
       } as unknown as NotebookInvitationService),
+    overrides.workspacesService ??
+      ({
+        ensureDefaultWorkspaceForUser: jest.fn(async () => ({
+          id: 'workspace-1',
+        })),
+      } as unknown as WorkspacesService),
     overrides.documentsService ??
       ({
         countDocumentsByNotebook: jest.fn(async () => ({})),

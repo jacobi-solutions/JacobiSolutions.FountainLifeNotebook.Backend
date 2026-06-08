@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import type { AuthenticatedUser } from '../auth/models/authenticated-user';
 import { DocumentsService } from '../documents/documents.service';
+import { WorkspacesService } from '../workspaces/workspaces.service';
 import { CreateNotebookRequest } from './data-contracts/create-notebook-request';
 import { InviteNotebookMemberRequest } from './data-contracts/invite-notebook-member-request';
 import { NotebookSummary } from './data-contracts/notebook-summary';
@@ -34,6 +35,7 @@ export class NotebooksService {
   constructor(
     private readonly notebooksRepository: NotebooksRepository,
     private readonly invitationService: NotebookInvitationService,
+    private readonly workspacesService: WorkspacesService,
     @Inject(forwardRef(() => DocumentsService))
     private readonly documentsService: DocumentsService,
   ) {}
@@ -54,6 +56,8 @@ export class NotebooksService {
     request: CreateNotebookRequest,
     user: AuthenticatedUser,
   ): Promise<NotebookSummary> {
+    const workspace =
+      await this.workspacesService.ensureDefaultWorkspaceForUser(user);
     const notebook = await this.notebooksRepository.create({
       category: cleanValue(request.category, DEFAULT_CATEGORY),
       description: cleanValue(request.description, DEFAULT_DESCRIPTION),
@@ -68,6 +72,7 @@ export class NotebooksService {
       ],
       ownerUserId: user.subject,
       title: cleanValue(request.title, DEFAULT_TITLE),
+      workspaceId: workspace.id,
     });
 
     return this.toSummary(notebook, 0, user);
@@ -86,7 +91,9 @@ export class NotebooksService {
           ? { category: cleanValue(request.category, DEFAULT_CATEGORY) }
           : {}),
         ...(request.description !== undefined
-          ? { description: cleanValue(request.description, DEFAULT_DESCRIPTION) }
+          ? {
+              description: cleanValue(request.description, DEFAULT_DESCRIPTION),
+            }
           : {}),
         ...(request.title !== undefined
           ? { title: cleanValue(request.title, DEFAULT_TITLE) }
@@ -114,18 +121,22 @@ export class NotebooksService {
   async inviteNotebookMember(
     request: InviteNotebookMemberRequest,
     user: AuthenticatedUser,
-  ): Promise<{ inviteDelivery: NotebookInviteDelivery; notebook: NotebookSummary }> {
+  ): Promise<{
+    inviteDelivery: NotebookInviteDelivery;
+    notebook: NotebookSummary;
+  }> {
     await this.assertNotebookRole(request.notebookId, user, ['owner']);
     if (request.role === 'owner') {
       throw new BadRequestException('Invited users must use a non-owner role.');
     }
 
-	    const email = normalizeEmail(request.email);
+    const email = normalizeEmail(request.email);
     if (email && email === normalizeEmail(user.email)) {
       throw new BadRequestException('Invite a different email address.');
     }
 
-	    const inviteDelivery = await this.invitationService.inviteUserByEmail(email);
+    const inviteDelivery =
+      await this.invitationService.inviteUserByEmail(email);
     const notebook = await this.notebooksRepository.addOrUpdateMember({
       email,
       invitedByUserId: user.subject,
@@ -182,6 +193,7 @@ export class NotebooksService {
       role: getMemberRole(notebook, user) ?? 'viewer',
       sourceCount,
       title: notebook.title,
+      workspaceId: notebook.workspaceId,
     };
   }
 
@@ -193,7 +205,9 @@ export class NotebooksService {
     const notebook = await this.getNotebookForMember(notebookId, user);
     const role = getMemberRole(notebook, user);
     if (!role || !allowedRoles.includes(role)) {
-      throw new ForbiddenException('User is not allowed to manage this notebook.');
+      throw new ForbiddenException(
+        'User is not allowed to manage this notebook.',
+      );
     }
   }
 
